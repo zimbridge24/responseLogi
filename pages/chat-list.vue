@@ -298,11 +298,24 @@ const startChatsSubscription = async () => {
             // 읽지 않은 메시지 수 계산
             const currentUserId = user.currentUser?.uid
             const lastReadAt = currentUserId ? chat[`lastReadAt_${currentUserId}`] : null
-            const unreadCount = await calculateUnreadCount(chat.id, lastReadAt)
+            
+            // lastReadAt이 Date 객체인지 확인하고 변환
+            let lastReadAtDate = null
+            if (lastReadAt) {
+              if (lastReadAt.toDate && typeof lastReadAt.toDate === 'function') {
+                lastReadAtDate = lastReadAt.toDate()
+              } else if (lastReadAt instanceof Date) {
+                lastReadAtDate = lastReadAt
+              } else {
+                lastReadAtDate = new Date(lastReadAt)
+              }
+            }
+            
+            const unreadCount = await calculateUnreadCount(chat.id, lastReadAtDate)
             chat.unreadCount = unreadCount
             unreadCounts.value.set(chat.id, unreadCount)
             
-            console.log(`채팅 ${chat.id} 읽지 않은 메시지 수:`, unreadCount, 'lastReadAt:', lastReadAt)
+            console.log(`채팅 ${chat.id} 읽지 않은 메시지 수:`, unreadCount, 'lastReadAt:', lastReadAtDate)
             
             updatedChats.push(chat)
           }
@@ -350,6 +363,26 @@ const openChat = async (chat: any) => {
         chats.value[chatIndex].unreadCount = 0
         chats.value[chatIndex][`lastReadAt_${currentUserId}`] = now
       }
+      
+      // Firestore 업데이트 후 실시간 구독이 트리거될 때까지 잠시 대기
+      setTimeout(async () => {
+        try {
+          // 해당 채팅의 읽지 않은 메시지 수를 다시 계산
+          const unreadCount = await calculateUnreadCount(chat.id, now)
+          chat.unreadCount = unreadCount
+          unreadCounts.value.set(chat.id, unreadCount)
+          
+          // chats 배열에서도 업데이트
+          const chatIndex = chats.value.findIndex(c => c.id === chat.id)
+          if (chatIndex !== -1) {
+            chats.value[chatIndex].unreadCount = unreadCount
+          }
+          
+          console.log('읽지 않은 메시지 수 재계산 완료:', unreadCount)
+        } catch (error) {
+          console.error('읽지 않은 메시지 수 재계산 실패:', error)
+        }
+      }, 500) // 500ms 후 재계산
     }
   } catch (error) {
     console.error('채팅 읽음 상태 업데이트 실패:', error)
