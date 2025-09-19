@@ -684,7 +684,10 @@ export class FirestoreService {
   async getChatMessages(chatId: string, constraints: QueryConstraint[] = []): Promise<ChatMessage[]> {
     try {
       const messagesRef = collection(this.db, 'chats', chatId, 'messages')
-      const q = query(messagesRef, ...constraints)
+      // 기본적으로 시간순 정렬 추가
+      const defaultConstraints = [orderBy('createdAt', 'asc')]
+      const allConstraints = [...defaultConstraints, ...constraints]
+      const q = query(messagesRef, ...allConstraints)
       const querySnapshot = await getDocs(q)
       return querySnapshot.docs.map(doc => {
         const data = this.convertTimestamps(doc.data())
