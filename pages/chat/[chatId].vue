@@ -163,6 +163,26 @@ const formatPrice = (price: number) => {
   return new Intl.NumberFormat('ko-KR').format(price)
 }
 
+// 마지막 읽은 시간 업데이트
+const updateLastReadAt = async () => {
+  try {
+    const currentUserId = user.currentUser?.uid
+    if (!currentUserId) return
+    
+    const chatRef = doc($db, 'chats', chatId)
+    const now = new Date()
+    
+    // 현재 사용자의 lastReadAt 업데이트
+    await setDoc(chatRef, {
+      [`lastReadAt_${currentUserId}`]: now
+    }, { merge: true })
+    
+    console.log('마지막 읽은 시간 업데이트됨:', now)
+  } catch (error) {
+    console.error('마지막 읽은 시간 업데이트 실패:', error)
+  }
+}
+
 // 채팅 로드
 const loadChat = async () => {
   loading.value = true
@@ -206,6 +226,9 @@ const loadChat = async () => {
           messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
         }
       })
+      
+      // 메시지를 읽었으므로 lastReadAt 업데이트
+      updateLastReadAt()
     })
   } catch (e) {
     console.error('채팅 로드 실패:', e)

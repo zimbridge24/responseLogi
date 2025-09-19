@@ -338,9 +338,23 @@ const calculateUnreadChatCount = async () => {
         const messages = await firestoreService.getChatMessages(chat.id)
         const currentUserId = user.currentUser?.uid
         
-        // 내가 보내지 않은 메시지 수 계산
-        const unreadMessages = messages.filter(msg => msg.senderId !== currentUserId)
-        totalUnreadCount += unreadMessages.length
+        // 마지막으로 읽은 시간 확인
+        const lastReadAt = chat[`lastReadAt_${currentUserId}`]
+        
+        if (!lastReadAt) {
+          // 마지막으로 읽은 시간이 없으면 모든 메시지가 읽지 않은 것으로 간주
+          const unreadMessages = messages.filter(msg => msg.senderId !== currentUserId)
+          totalUnreadCount += unreadMessages.length
+        } else {
+          // 마지막으로 읽은 시간 이후의 메시지 중 내가 보내지 않은 메시지 수
+          const unreadMessages = messages.filter(msg => {
+            if (msg.senderId === currentUserId) return false
+            
+            const messageTime = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date(msg.createdAt)
+            return messageTime > lastReadAt
+          })
+          totalUnreadCount += unreadMessages.length
+        }
       } catch (error) {
         console.error('채팅 메시지 확인 실패:', error)
       }

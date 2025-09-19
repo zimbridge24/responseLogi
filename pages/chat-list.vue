@@ -165,6 +165,8 @@ const calculateUnreadCount = async (chatId: string, lastReadAt?: Date) => {
     const messages = await firestoreService.getChatMessages(chatId)
     const currentUserId = user.currentUser?.uid
     
+    if (!currentUserId) return 0
+    
     if (!lastReadAt) {
       // 마지막으로 읽은 시간이 없으면 모든 메시지가 읽지 않은 것으로 간주
       const unreadMessages = messages.filter(msg => msg.senderId !== currentUserId)
@@ -172,10 +174,12 @@ const calculateUnreadCount = async (chatId: string, lastReadAt?: Date) => {
     }
     
     // 마지막으로 읽은 시간 이후의 메시지 중 내가 보내지 않은 메시지 수
-    const unreadMessages = messages.filter(msg => 
-      msg.senderId !== currentUserId && 
-      new Date(msg.createdAt) > lastReadAt
-    )
+    const unreadMessages = messages.filter(msg => {
+      if (msg.senderId === currentUserId) return false
+      
+      const messageTime = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date(msg.createdAt)
+      return messageTime > lastReadAt
+    })
     
     return unreadMessages.length
   } catch (error) {
@@ -228,7 +232,9 @@ const loadChats = async () => {
           chat.lastMessageAt = lastMessage.createdAt
           
           // 읽지 않은 메시지 수 계산
-          const unreadCount = await calculateUnreadCount(chat.id, chat.lastReadAt)
+          const currentUserId = user.currentUser?.uid
+          const lastReadAt = currentUserId ? chat[`lastReadAt_${currentUserId}`] : null
+          const unreadCount = await calculateUnreadCount(chat.id, lastReadAt)
           chat.unreadCount = unreadCount
           unreadCounts.value.set(chat.id, unreadCount)
           
@@ -288,6 +294,13 @@ const startChatsSubscription = async () => {
             const lastMessage = messages[messages.length - 1]
             chat.lastMessage = lastMessage.text
             chat.lastMessageAt = lastMessage.createdAt
+            
+            // 읽지 않은 메시지 수 계산
+            const currentUserId = user.currentUser?.uid
+            const lastReadAt = currentUserId ? chat[`lastReadAt_${currentUserId}`] : null
+            const unreadCount = await calculateUnreadCount(chat.id, lastReadAt)
+            chat.unreadCount = unreadCount
+            unreadCounts.value.set(chat.id, unreadCount)
             
             updatedChats.push(chat)
           }
