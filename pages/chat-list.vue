@@ -343,6 +343,13 @@ const openChat = async (chat: any) => {
       chat[`lastReadAt_${currentUserId}`] = now
       chat.unreadCount = 0
       unreadCounts.value.set(chat.id, 0)
+      
+      // chats 배열에서 해당 채팅 찾아서 업데이트
+      const chatIndex = chats.value.findIndex(c => c.id === chat.id)
+      if (chatIndex !== -1) {
+        chats.value[chatIndex].unreadCount = 0
+        chats.value[chatIndex][`lastReadAt_${currentUserId}`] = now
+      }
     }
   } catch (error) {
     console.error('채팅 읽음 상태 업데이트 실패:', error)

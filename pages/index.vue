@@ -70,9 +70,13 @@
           <!-- 채팅 버튼 (모든 로그인된 사용자) -->
           <NuxtLink 
             to="/chat-list" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            @click="calculateUnreadChatCount"
+            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full flex items-center"
           >
             채팅
+            <span v-if="unreadChatCount > 0" class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white">
+              {{ unreadChatCount > 99 ? '99+' : unreadChatCount }}
+            </span>
           </NuxtLink>
           <div class="w-px h-6 bg-gray-300"></div>
           <button 
@@ -152,7 +156,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+import { FirestoreService } from '~/lib/services/firestore'
+import { where } from 'firebase/firestore'
 
 // 사용자 스토어 사용
 const user = useUserStore()
@@ -160,11 +166,74 @@ const user = useUserStore()
 // Initialize auth listener
 user.initializeAuth()
 
+// 읽지 않은 메시지 수
+const unreadChatCount = ref(0)
+
+// 읽지 않은 메시지 수 계산
+const calculateUnreadChatCount = async () => {
+  try {
+    if (!user.isLoggedIn || !user.currentUser?.uid) return
+    
+    const { $db } = useNuxtApp()
+    const firestoreService = new FirestoreService($db)
+    
+    // 사용자 역할에 따라 채팅 목록 가져오기
+    let userChats
+    if (user.role === 'customer') {
+      userChats = await firestoreService.getChats([
+        where('customerId', '==', user.currentUser.uid)
+      ])
+    } else if (user.role === 'partner') {
+      userChats = await firestoreService.getChats([
+        where('partnerId', '==', user.currentUser.uid)
+      ])
+    } else {
+      return
+    }
+    
+    let totalUnreadCount = 0
+    
+    for (const chat of userChats) {
+      try {
+        const messages = await firestoreService.getChatMessages(chat.id)
+        const currentUserId = user.currentUser.uid
+        
+        // 마지막으로 읽은 시간 확인
+        const lastReadAt = chat[`lastReadAt_${currentUserId}`]
+        
+        if (!lastReadAt) {
+          // 마지막으로 읽은 시간이 없으면 모든 메시지가 읽지 않은 것으로 간주
+          const unreadMessages = messages.filter(msg => msg.senderId !== currentUserId)
+          totalUnreadCount += unreadMessages.length
+        } else {
+          // 마지막으로 읽은 시간 이후의 메시지 중 내가 보내지 않은 메시지 수
+          const unreadMessages = messages.filter(msg => {
+            if (msg.senderId === currentUserId) return false
+            
+            const messageTime = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date(msg.createdAt)
+            return messageTime > lastReadAt
+          })
+          totalUnreadCount += unreadMessages.length
+        }
+      } catch (error) {
+        console.error('채팅 메시지 확인 실패:', error)
+      }
+    }
+    
+    unreadChatCount.value = totalUnreadCount
+  } catch (error) {
+    console.error('읽지 않은 메시지 수 계산 실패:', error)
+  }
+}
+
 // 로그인된 사용자는 적절한 페이지로 리다이렉트
 onMounted(async () => {
   if (user.isLoggedIn) {
     // 이미 redirectAfterLogin에서 처리되므로 여기서는 추가 처리하지 않음
     console.log('User is logged in, redirect handled by login process')
+    
+    // 읽지 않은 메시지 수 계산
+    await calculateUnreadChatCount()
   }
 })
 
