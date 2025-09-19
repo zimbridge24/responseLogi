@@ -271,11 +271,11 @@
                       견적 수락
                     </button>
                     <button 
-                      @click="rejectQuote(quote.id)"
+                      @click="deleteQuote(quote.id, quote.partnerName)"
                       :disabled="quote.status !== 'pending'"
-                      class="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed"
                     >
-                      거절
+                      삭제
                     </button>
                   </div>
                   <button 
@@ -687,21 +687,30 @@ const acceptQuote = async (quoteId: string) => {
   }
 }
 
-// 견적 거절
-const rejectQuote = async (quoteId: string) => {
+// 견적 삭제
+const deleteQuote = async (quoteId: string, partnerName: string) => {
   try {
+    // 삭제 확인 팝업
+    const confirmed = confirm(`${partnerName}업체의 견적서를 목록에서 지우시겠습니까?`)
+    
+    if (!confirmed) {
+      return
+    }
+    
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
-    // 견적 상태를 거절로 변경
+    // 견적 상태를 거절로 변경 (실제로는 삭제하지만 상태만 변경)
     await firestoreService.updateWarehouseQuote(quoteId, { status: 'rejected' })
     
     // 목록 새로고침
     await loadQuotesForSelectedRequest()
     
-    console.log('견적이 거절되었습니다:', quoteId)
+    console.log('견적이 삭제되었습니다:', quoteId)
+    alert('견적서가 삭제되었습니다.')
   } catch (error) {
-    console.error('견적 거절 실패:', error)
+    console.error('견적 삭제 실패:', error)
+    alert('견적서 삭제에 실패했습니다.')
   }
 }
 </script>
