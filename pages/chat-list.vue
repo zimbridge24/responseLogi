@@ -302,6 +302,8 @@ const startChatsSubscription = async () => {
             chat.unreadCount = unreadCount
             unreadCounts.value.set(chat.id, unreadCount)
             
+            console.log(`채팅 ${chat.id} 읽지 않은 메시지 수:`, unreadCount, 'lastReadAt:', lastReadAt)
+            
             updatedChats.push(chat)
           }
         } catch (error) {
@@ -317,8 +319,35 @@ const startChatsSubscription = async () => {
 }
 
 // 채팅방 열기
-const openChat = (chat: any) => {
+const openChat = async (chat: any) => {
   console.log('채팅방 열기:', chat.id)
+  
+  // 채팅을 열 때 lastReadAt 업데이트
+  try {
+    const currentUserId = user.currentUser?.uid
+    if (currentUserId) {
+      const { $db } = useNuxtApp()
+      const { doc, setDoc } = await import('firebase/firestore')
+      
+      const chatRef = doc($db, 'chats', chat.id)
+      const now = new Date()
+      
+      // 현재 사용자의 lastReadAt 업데이트
+      await setDoc(chatRef, {
+        [`lastReadAt_${currentUserId}`]: now
+      }, { merge: true })
+      
+      console.log('채팅 읽음 상태 업데이트됨:', now)
+      
+      // 로컬 상태도 즉시 업데이트
+      chat[`lastReadAt_${currentUserId}`] = now
+      chat.unreadCount = 0
+      unreadCounts.value.set(chat.id, 0)
+    }
+  } catch (error) {
+    console.error('채팅 읽음 상태 업데이트 실패:', error)
+  }
+  
   navigateTo(`/chat/${chat.id}`)
 }
 
