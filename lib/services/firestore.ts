@@ -513,9 +513,10 @@ export class FirestoreService {
       const quotes = await this.getWarehouseQuotes([
         where('requestId', '==', requestId)
       ])
-      // 클라이언트에서 정렬
-      quotes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      return quotes
+      // rejected 상태인 견적 제외하고 클라이언트에서 정렬
+      const filteredQuotes = quotes.filter(quote => quote.status !== 'rejected')
+      filteredQuotes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      return filteredQuotes
     } catch (error) {
       console.error('Error getting warehouse quotes by request:', error)
       throw error
