@@ -142,11 +142,47 @@
           </NuxtLink>
         </div>
 
-        <!-- 다른 역할의 로그인된 사용자인 경우 -->
-        <div v-else class="flex justify-center animate-bounce-in">
+        <!-- 파트너인 경우 -->
+        <div v-else-if="user.isLoggedIn && user.role === 'partner'" class="flex flex-col items-center animate-bounce-in">
+          <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">사용 가능한 견적 신청</h2>
+            <div v-if="availableRequests.length > 0" class="text-2xl font-semibold text-blue-600">
+              {{ availableRequests.length }}건의 견적 신청이 있습니다
+            </div>
+            <div v-else class="text-2xl font-semibold text-gray-500">
+              0건입니다
+            </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <NuxtLink 
+              to="/partner/requests" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>📋</span>
+                <span>견적 신청서 보기</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+            <NuxtLink 
+              to="/partner/my-quotes" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>💼</span>
+                <span>내 견적 관리</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- 관리자인 경우 -->
+        <div v-else-if="user.isLoggedIn && user.role === 'admin'" class="flex justify-center animate-bounce-in">
           <div class="text-center">
-            <p class="text-lg text-gray-600 mb-4">관리자 또는 파트너로 로그인하셨습니다.</p>
-            <p class="text-sm text-gray-500">해당 역할에 맞는 페이지로 이동하세요.</p>
+            <p class="text-lg text-gray-600 mb-4">관리자로 로그인하셨습니다.</p>
+            <p class="text-sm text-gray-500">관리자 페이지로 이동하세요.</p>
           </div>
         </div>
       </div>
@@ -168,6 +204,9 @@ user.initializeAuth()
 
 // 읽지 않은 메시지 수
 const unreadChatCount = ref(0)
+
+// 사용 가능한 견적 신청 목록 (파트너용)
+const availableRequests = ref<any[]>([])
 
 // 읽지 않은 메시지 수 계산
 const calculateUnreadChatCount = async () => {
@@ -226,14 +265,31 @@ const calculateUnreadChatCount = async () => {
   }
 }
 
+// 사용 가능한 견적 신청 목록 로드 (파트너용)
+const loadAvailableRequests = async () => {
+  try {
+    if (!user.isLoggedIn || user.role !== 'partner') return
+    
+    const { $db } = useNuxtApp()
+    const firestoreService = new FirestoreService($db)
+    
+    // 사용 가능한 견적 신청 목록 가져오기
+    availableRequests.value = await firestoreService.getAvailableWarehouseRequests()
+  } catch (error) {
+    console.error('사용 가능한 견적 신청 목록 로드 실패:', error)
+  }
+}
+
 // 로그인된 사용자는 적절한 페이지로 리다이렉트
 onMounted(async () => {
   if (user.isLoggedIn) {
-    // 이미 redirectAfterLogin에서 처리되므로 여기서는 추가 처리하지 않음
-    console.log('User is logged in, redirect handled by login process')
-    
     // 읽지 않은 메시지 수 계산
     await calculateUnreadChatCount()
+    
+    // 파트너인 경우 사용 가능한 견적 신청 목록 로드
+    if (user.role === 'partner') {
+      await loadAvailableRequests()
+    }
   }
 })
 

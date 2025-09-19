@@ -373,20 +373,10 @@ const loadRequests = async () => {
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
-    // 사용자 ID 확인 및 디버깅
     const userId = user.currentUser?.uid
-    console.log('=== 견적 목록 로드 시작 ===')
-    console.log('현재 사용자 ID:', userId)
-    console.log('사용자 정보:', user.user)
-    console.log('사용자 역할:', user.role)
-    console.log('로그인 상태:', user.isLoggedIn)
     
     if (userId) {
-      console.log('견적 목록을 불러오는 중...')
       const warehouseRequests = await firestoreService.getWarehouseRequestsByCustomer(userId)
-      console.log('Firestore에서 받은 데이터:', warehouseRequests)
-      console.log('데이터 타입:', typeof warehouseRequests)
-      console.log('배열 길이:', warehouseRequests?.length)
       
       // 각 견적 신청에 대한 실제 견적 응답 수를 가져오기
       const requestsWithQuoteCount = await Promise.all(
@@ -405,18 +395,11 @@ const loadRequests = async () => {
       )
       
       requests.value = requestsWithQuoteCount
-      console.log('설정된 requests.value:', requests.value)
-    } else {
-      console.error('사용자 ID가 없습니다.')
-      console.log('currentUser 전체:', user.currentUser)
     }
   } catch (error) {
     console.error('견적 목록 로드 실패:', error)
-    console.error('에러 상세:', error.message)
-    console.error('에러 스택:', error.stack)
   } finally {
     loading.value = false
-    console.log('=== 견적 목록 로드 완료 ===')
   }
 }
 
@@ -451,20 +434,11 @@ onMounted(async () => {
   // 사용자 상태가 로드될 때까지 잠시 대기
   await new Promise(resolve => setTimeout(resolve, 500))
   
-  console.log('고객 요청 페이지 로그인 체크:', {
-    isLoggedIn: user.isLoggedIn,
-    role: user.role,
-    currentUser: user.currentUser,
-    userProfile: user.user
-  })
-  
   if (!user.isLoggedIn) {
-    console.log('로그인되지 않음, 로그인 페이지로 이동')
     navigateTo('/login')
     return
   }
   if (user.role !== 'customer') {
-    console.log('고객이 아님, 메인 페이지로 이동')
     navigateTo('/')
     return
   }
@@ -576,20 +550,10 @@ const getQuoteStatusText = (status: string) => {
 
 // 채팅 시작
 const startChat = (quote: WarehouseQuote) => {
-  console.log('채팅 시작 - 견적 ID:', quote.id)
-  console.log('현재 사용자 상태:', {
-    isLoggedIn: user.isLoggedIn,
-    role: user.role,
-    userId: user.currentUser?.uid
-  })
-  
   // 새로운 공용 채팅 라우트로 이동
   // chatId 형식: requestId_customerId_partnerId
   const chatId = `${quote.requestId}_${user.currentUser?.uid}_${quote.partnerId}`
-  console.log('채팅 ID 생성:', chatId)
-  
   const chatUrl = `/chat/${chatId}`
-  console.log('리다이렉트 URL:', chatUrl)
   
   if (process.client) {
     window.location.href = chatUrl
@@ -601,17 +565,11 @@ const startChat = (quote: WarehouseQuote) => {
 // 견적 수락
 const acceptQuote = async (quoteId: string) => {
   try {
-    console.log('=== 견적 수락 시작 ===')
-    console.log('견적 ID:', quoteId)
-    console.log('현재 사용자 ID:', user.currentUser?.uid)
-    
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
     // 견적 정보 가져오기
     const quote = selectedRequestQuotes.value.find(q => q.id === quoteId)
-    console.log('선택된 견적:', quote)
-    console.log('선택된 요청:', selectedRequest.value)
     
     if (!quote || !selectedRequest.value) {
       console.error('견적 또는 요청 정보를 찾을 수 없습니다')
@@ -619,13 +577,8 @@ const acceptQuote = async (quoteId: string) => {
     }
     
     // 고객과 파트너 정보 가져오기
-    console.log('고객 정보 조회 중...')
     const customer = await firestoreService.getUser(user.currentUser?.uid || '')
-    console.log('고객 정보:', customer)
-    
-    console.log('파트너 정보 조회 중...')
     const partner = await firestoreService.getUser(quote.partnerId)
-    console.log('파트너 정보:', partner)
     
     if (!customer || !partner) {
       console.error('고객 또는 파트너 정보를 찾을 수 없습니다')
@@ -633,7 +586,6 @@ const acceptQuote = async (quoteId: string) => {
     }
     
     // 완료된 견적으로 저장
-    console.log('완료된 견적 생성 중...')
     const completedQuoteData = {
       requestId: selectedRequest.value.id,
       customerId: user.currentUser?.uid || '',
@@ -659,30 +611,21 @@ const acceptQuote = async (quoteId: string) => {
       status: 'active' as const
     }
     
-    console.log('완료된 견적 데이터:', completedQuoteData)
-    
     const completedQuoteId = await firestoreService.createCompletedQuote(completedQuoteData)
-    console.log('완료된 견적 생성 성공, ID:', completedQuoteId)
     
     // 견적 상태를 수락으로 변경
-    console.log('견적 상태 업데이트 중...')
     await firestoreService.updateWarehouseQuote(quoteId, { status: 'accepted' })
     
     // 견적 신청 상태를 수락으로 변경
-    console.log('요청 상태 업데이트 중...')
     await firestoreService.updateWarehouseRequest(selectedRequest.value.id, { status: 'accepted' })
     
     // 목록 새로고침
-    console.log('목록 새로고침 중...')
     await loadRequests()
     await loadQuotesForSelectedRequest()
     
-    console.log('견적이 수락되었습니다:', quoteId)
-    console.log('=== 견적 수락 완료 ===')
     alert('견적이 수락되었습니다!')
   } catch (error) {
     console.error('견적 수락 실패:', error)
-    console.error('에러 상세:', error.message)
     alert('견적 수락에 실패했습니다.')
   }
 }

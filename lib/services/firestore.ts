@@ -402,15 +402,12 @@ export class FirestoreService {
 
   async getWarehouseRequestsByCustomer(customerId: string): Promise<WarehouseRequest[]> {
     try {
-      console.log('FirestoreService: customerId로 견적 조회 중:', customerId)
       // 임시로 orderBy를 제거하여 인덱스 없이 쿼리 실행
       const requests = await this.getWarehouseRequests([
         where('customerId', '==', customerId)
       ])
       // 클라이언트에서 정렬
       requests.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      console.log('FirestoreService: 조회된 견적 수:', requests.length)
-      console.log('FirestoreService: 조회된 견적 데이터:', requests)
       return requests
     } catch (error) {
       console.error('Error getting warehouse requests by customer:', error)
