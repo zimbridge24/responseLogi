@@ -162,7 +162,7 @@ export const useUserStore = defineStore('user', () => {
       if (role.value === 'partner') {
         redirectUrl = '/partner/requests'
       } else if (role.value === 'customer') {
-        redirectUrl = '/customer/chat'
+        redirectUrl = '/customer/requests'
       } else if (role.value === 'admin') {
         redirectUrl = '/admin/dashboard'
       }
