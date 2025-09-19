@@ -185,29 +185,16 @@ onMounted(async () => {
     attempts++
   }
   
-  console.log('파트너 요청 목록 페이지 - 인증 상태:', {
-    isLoggedIn: user.isLoggedIn,
-    role: user.role,
-    authReady: user.authReady,
-    currentUser: user.currentUser?.uid,
-    approvalStatus: user.user?.approvalStatus
-  })
-  
   if (!user.isLoggedIn || user.role !== 'partner') {
-    console.log('로그인되지 않았거나 파트너가 아님, 로그인 페이지로 이동')
     navigateTo('/login')
     return
   }
   
   // 파트너 승인 상태 확인
   if (user.user?.approvalStatus !== 'approved') {
-    console.log('승인되지 않은 파트너, 대기 페이지로 이동')
-    // 승인되지 않은 파트너는 대기 페이지로 이동
     navigateTo('/partner/pending')
     return
   }
-  
-  console.log('인증 확인 완료, 데이터 로드 시작')
   loadRequests()
   calculateUnreadChatCount()
 })
@@ -270,18 +257,11 @@ const loadRequests = async () => {
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
-    console.log('=== 파트너 견적 신청서 로드 시작 ===')
-    console.log('현재 사용자 역할:', user.role)
-    console.log('로그인 상태:', user.isLoggedIn)
-    
     // 최대 7개 견적을 받을 수 있는 견적 신청서만 가져오기
     const availableRequests = await firestoreService.getAvailableWarehouseRequests()
-    console.log('사용 가능한 견적 신청서:', availableRequests)
-    console.log('견적 신청서 수:', availableRequests.length)
     
     // 파트너가 이미 견적을 제출한 요청들 확인
     const quotes = await firestoreService.getWarehouseQuotesByPartner(user.currentUser?.uid || '')
-    console.log('파트너가 제출한 견적들:', quotes)
     
     // 견적 제출 여부 맵 생성
     const quotesMap = new Map<string, boolean>()
@@ -289,25 +269,17 @@ const loadRequests = async () => {
       quotesMap.set(quote.requestId, true)
     })
     
-    console.log('견적 제출 여부 맵:', Object.fromEntries(quotesMap))
-    
     // 응답완료된 견적 신청서는 목록에서 제외
     const filteredRequests = availableRequests.filter(request => {
       const hasResponded = quotesMap.has(request.id)
-      console.log(`견적 신청서 ${request.id}: 응답완료 여부 = ${hasResponded}`)
       return !hasResponded
     })
-    
-    console.log('필터링 전 견적 신청서 수:', availableRequests.length)
-    console.log('필터링 후 견적 신청서 수:', filteredRequests.length)
     
     requests.value = filteredRequests
   } catch (error) {
     console.error('견적 신청서 로드 실패:', error)
-    console.error('에러 상세:', error.message)
   } finally {
     loading.value = false
-    console.log('=== 파트너 견적 신청서 로드 완료 ===')
   }
 }
 
@@ -371,21 +343,7 @@ const viewRequest = (request: WarehouseRequest) => {
 
 // 견적 응답
 const respondToRequest = (request: WarehouseRequest) => {
-  console.log('=== 견적 응답 버튼 클릭 ===')
-  console.log('선택된 견적 신청서:', request)
-  console.log('견적 신청서 ID:', request.id)
-  console.log('현재 사용자 상태:', {
-    isLoggedIn: user.isLoggedIn,
-    role: user.role,
-    currentUser: user.currentUser?.uid,
-    approvalStatus: user.user?.approvalStatus
-  })
-  
-  const targetUrl = `/partner/quote/${request.id}`
-  console.log('이동할 URL:', targetUrl)
-  
-  // 견적 응답 페이지로 이동
-  navigateTo(targetUrl)
+  navigateTo(`/partner/quote/${request.id}`)
 }
 
 

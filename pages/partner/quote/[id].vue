@@ -355,49 +355,26 @@ const requestId = route.params.id as string
 const user = useUserStore()
 
 onMounted(async () => {
-  console.log('=== 견적 응답 페이지 마운트 시작 ===')
-  console.log('요청 ID:', requestId)
-  
   // 인증 상태가 준비될 때까지 대기
   let attempts = 0
   const maxAttempts = 50 // 5초 (100ms * 50)
   
-  console.log('인증 상태 대기 중...')
   while (!user.authReady && attempts < maxAttempts) {
     await new Promise(resolve => setTimeout(resolve, 100))
     attempts++
-    console.log(`인증 대기 시도 ${attempts}/${maxAttempts}`)
   }
   
-  console.log('견적 응답 페이지 - 인증 상태:', {
-    isLoggedIn: user.isLoggedIn,
-    role: user.role,
-    authReady: user.authReady,
-    currentUser: user.currentUser?.uid,
-    userProfile: user.user,
-    approvalStatus: user.user?.approvalStatus
-  })
-  
-  if (!user.isLoggedIn) {
-    console.log('❌ 로그인되지 않음, 로그인 페이지로 이동')
-    navigateTo('/login')
-    return
-  }
-  
-  if (user.role !== 'partner') {
-    console.log('❌ 파트너가 아님, 로그인 페이지로 이동')
+  if (!user.isLoggedIn || user.role !== 'partner') {
     navigateTo('/login')
     return
   }
   
   // 파트너 승인 상태 확인
   if (user.user?.approvalStatus !== 'approved') {
-    console.log('❌ 승인되지 않은 파트너, 대기 페이지로 이동')
     navigateTo('/partner/pending')
     return
   }
   
-  console.log('✅ 모든 인증 체크 통과, 견적 신청서 로드 시작')
   loadRequest()
 })
 
@@ -426,9 +403,7 @@ const loadRequest = async () => {
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
-    console.log('견적 신청서 로드 중:', requestId)
     request.value = await firestoreService.getWarehouseRequest(requestId)
-    console.log('로드된 견적 신청서:', request.value)
   } catch (error) {
     console.error('견적 신청서 로드 실패:', error)
     errorMessage.value = '견적 신청서를 불러오는데 실패했습니다.'
@@ -469,11 +444,8 @@ const submitQuote = async () => {
       status: 'pending' as const
     }
 
-    console.log('견적 응답 데이터:', quoteData)
-
     // 견적 응답 저장
     const quoteId = await firestoreService.createWarehouseQuote(quoteData)
-    console.log('견적 응답 저장 완료:', quoteId)
 
     // 견적 신청서의 currentQuoteCount 증가
     if (request.value) {
@@ -481,14 +453,8 @@ const submitQuote = async () => {
     }
 
     // 성공 메시지 표시 후 목록으로 이동
-    console.log('견적 제출 성공, 목록으로 이동')
-    
-    // 성공 메시지를 표시하고 잠시 후 이동
     if (confirm('견적이 성공적으로 제출되었습니다! 목록으로 이동하시겠습니까?')) {
       await navigateTo('/partner/requests')
-    } else {
-      // 사용자가 취소하면 현재 페이지에 머물러 있음
-      console.log('사용자가 목록 이동을 취소함')
     }
   } catch (error) {
     console.error('견적 응답 제출 실패:', error)

@@ -420,7 +420,6 @@ export class FirestoreService {
 
   async getAvailableWarehouseRequests(): Promise<WarehouseRequest[]> {
     try {
-      console.log('FirestoreService: 사용 가능한 견적 신청 조회 중...')
       // 임시로 복합 쿼리를 단순화하여 인덱스 없이 실행
       const allRequests = await this.getWarehouseRequests([
         where('status', '==', 'pending')
@@ -437,7 +436,6 @@ export class FirestoreService {
           return b.createdAt.getTime() - a.createdAt.getTime()
         })
       
-      console.log('FirestoreService: 사용 가능한 견적 신청 수:', availableRequests.length)
       return availableRequests
     } catch (error) {
       console.error('Error getting available warehouse requests:', error)
