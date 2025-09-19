@@ -160,26 +160,11 @@ const user = useUserStore()
 // Initialize auth listener
 user.initializeAuth()
 
-// 파트너는 승인 상태에 따라 적절한 페이지로 리다이렉트
+// 로그인된 사용자는 적절한 페이지로 리다이렉트
 onMounted(async () => {
-  if (user.isLoggedIn && user.role === 'partner') {
-    // 사용자 프로필이 로드될 때까지 대기
-    let attempts = 0
-    const maxAttempts = 50 // 5초 (100ms * 50)
-    
-    while (!user.user && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 100))
-      attempts++
-    }
-    
-    // 승인 상태에 따라 리다이렉트
-    if (user.user?.approvalStatus === 'approved') {
-      navigateTo('/partner/requests')
-    } else if (user.user?.approvalStatus === 'rejected') {
-      navigateTo('/partner/rejected')
-    } else {
-      navigateTo('/partner/pending')
-    }
+  if (user.isLoggedIn) {
+    // 이미 redirectAfterLogin에서 처리되므로 여기서는 추가 처리하지 않음
+    console.log('User is logged in, redirect handled by login process')
   }
 })
 

@@ -106,13 +106,27 @@ export const useUserStore = defineStore('user', () => {
       await signInWithEmailAndPassword(auth, email, password)
       console.log('Firebase auth successful')
   
-      // ✅ auth state가 준비될 때까지 기다렸다가 redirect
+      // ✅ auth state와 사용자 프로필이 준비될 때까지 기다렸다가 redirect
       const checkReady = setInterval(() => {
-        if (authReady.value && role.value) {
+        if (authReady.value && role.value && userProfile.value) {
           clearInterval(checkReady)
+          console.log('Login redirect ready:', {
+            role: role.value,
+            approvalStatus: userProfile.value?.approvalStatus,
+            userProfile: userProfile.value
+          })
           redirectAfterLogin()
         }
       }, 100)
+      
+      // 최대 10초 후에는 강제로 리다이렉트 (타임아웃 방지)
+      setTimeout(() => {
+        if (authReady.value && role.value) {
+          clearInterval(checkReady)
+          console.log('Login redirect timeout, proceeding with basic redirect')
+          redirectAfterLogin()
+        }
+      }, 10000)
   
     } catch (error) {
       console.error('Login error:', error)
@@ -160,7 +174,14 @@ export const useUserStore = defineStore('user', () => {
       let redirectUrl = '/'
       
       if (role.value === 'partner') {
-        redirectUrl = '/partner/requests'
+        // 파트너는 승인 상태에 따라 적절한 페이지로 리다이렉트
+        if (userProfile.value?.approvalStatus === 'approved') {
+          redirectUrl = '/partner/requests'
+        } else if (userProfile.value?.approvalStatus === 'rejected') {
+          redirectUrl = '/partner/rejected'
+        } else {
+          redirectUrl = '/partner/pending'
+        }
       } else if (role.value === 'customer') {
         redirectUrl = '/customer/requests'
       } else if (role.value === 'admin') {
@@ -168,7 +189,8 @@ export const useUserStore = defineStore('user', () => {
       }
       
       console.log('자동 리다이렉트:', redirectUrl)
-      window.location.href = redirectUrl
+      // window.location.href 대신 navigateTo 사용
+      navigateTo(redirectUrl)
     }
   }
 
