@@ -355,35 +355,49 @@ const requestId = route.params.id as string
 const user = useUserStore()
 
 onMounted(async () => {
+  console.log('=== 견적 응답 페이지 마운트 시작 ===')
+  console.log('요청 ID:', requestId)
+  
   // 인증 상태가 준비될 때까지 대기
   let attempts = 0
   const maxAttempts = 50 // 5초 (100ms * 50)
   
+  console.log('인증 상태 대기 중...')
   while (!user.authReady && attempts < maxAttempts) {
     await new Promise(resolve => setTimeout(resolve, 100))
     attempts++
+    console.log(`인증 대기 시도 ${attempts}/${maxAttempts}`)
   }
   
   console.log('견적 응답 페이지 - 인증 상태:', {
     isLoggedIn: user.isLoggedIn,
     role: user.role,
     authReady: user.authReady,
-    currentUser: user.currentUser?.uid
+    currentUser: user.currentUser?.uid,
+    userProfile: user.user,
+    approvalStatus: user.user?.approvalStatus
   })
   
-  if (!user.isLoggedIn || user.role !== 'partner') {
-    console.log('로그인되지 않았거나 파트너가 아님, 로그인 페이지로 이동')
+  if (!user.isLoggedIn) {
+    console.log('❌ 로그인되지 않음, 로그인 페이지로 이동')
+    navigateTo('/login')
+    return
+  }
+  
+  if (user.role !== 'partner') {
+    console.log('❌ 파트너가 아님, 로그인 페이지로 이동')
     navigateTo('/login')
     return
   }
   
   // 파트너 승인 상태 확인
   if (user.user?.approvalStatus !== 'approved') {
-    console.log('승인되지 않은 파트너, 대기 페이지로 이동')
+    console.log('❌ 승인되지 않은 파트너, 대기 페이지로 이동')
     navigateTo('/partner/pending')
     return
   }
   
+  console.log('✅ 모든 인증 체크 통과, 견적 신청서 로드 시작')
   loadRequest()
 })
 

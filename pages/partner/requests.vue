@@ -371,8 +371,21 @@ const viewRequest = (request: WarehouseRequest) => {
 
 // 견적 응답
 const respondToRequest = (request: WarehouseRequest) => {
-  // 견적 응답 페이지로 이동 (나중에 구현)
-  navigateTo(`/partner/quote/${request.id}`)
+  console.log('=== 견적 응답 버튼 클릭 ===')
+  console.log('선택된 견적 신청서:', request)
+  console.log('견적 신청서 ID:', request.id)
+  console.log('현재 사용자 상태:', {
+    isLoggedIn: user.isLoggedIn,
+    role: user.role,
+    currentUser: user.currentUser?.uid,
+    approvalStatus: user.user?.approvalStatus
+  })
+  
+  const targetUrl = `/partner/quote/${request.id}`
+  console.log('이동할 URL:', targetUrl)
+  
+  // 견적 응답 페이지로 이동
+  navigateTo(targetUrl)
 }
 
 
