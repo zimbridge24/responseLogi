@@ -1,0 +1,28 @@
+{
+  "name": "my-nuxt3-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "start": "nuxt start"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "0.11.2",
+    "@vee-validate/nuxt": "^4.12.6",
+    "@vee-validate/rules": "^4.12.6",
+    "@vee-validate/yup": "^4.12.6",
+    "firebase": "^11.10.0",
+    "nuxt": "3.19.1",
+    "pinia": "3.0.3",
+    "yup": "^1.4.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@types/node": "20.12.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13",
+    "typescript": "5.6.3"
+  }
+}
