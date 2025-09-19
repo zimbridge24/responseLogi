@@ -354,11 +354,36 @@ const requestId = route.params.id as string
 // 로그인 체크
 const user = useUserStore()
 
-onMounted(() => {
+onMounted(async () => {
+  // 인증 상태가 준비될 때까지 대기
+  let attempts = 0
+  const maxAttempts = 50 // 5초 (100ms * 50)
+  
+  while (!user.authReady && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 100))
+    attempts++
+  }
+  
+  console.log('견적 응답 페이지 - 인증 상태:', {
+    isLoggedIn: user.isLoggedIn,
+    role: user.role,
+    authReady: user.authReady,
+    currentUser: user.currentUser?.uid
+  })
+  
   if (!user.isLoggedIn || user.role !== 'partner') {
+    console.log('로그인되지 않았거나 파트너가 아님, 로그인 페이지로 이동')
     navigateTo('/login')
     return
   }
+  
+  // 파트너 승인 상태 확인
+  if (user.user?.approvalStatus !== 'approved') {
+    console.log('승인되지 않은 파트너, 대기 페이지로 이동')
+    navigateTo('/partner/pending')
+    return
+  }
+  
   loadRequest()
 })
 
@@ -442,8 +467,15 @@ const submitQuote = async () => {
     }
 
     // 성공 메시지 표시 후 목록으로 이동
-    alert('견적이 성공적으로 제출되었습니다!')
-    navigateTo('/partner/requests')
+    console.log('견적 제출 성공, 목록으로 이동')
+    
+    // 성공 메시지를 표시하고 잠시 후 이동
+    if (confirm('견적이 성공적으로 제출되었습니다! 목록으로 이동하시겠습니까?')) {
+      await navigateTo('/partner/requests')
+    } else {
+      // 사용자가 취소하면 현재 페이지에 머물러 있음
+      console.log('사용자가 목록 이동을 취소함')
+    }
   } catch (error) {
     console.error('견적 응답 제출 실패:', error)
     errorMessage.value = '견적 제출에 실패했습니다. 다시 시도해주세요.'

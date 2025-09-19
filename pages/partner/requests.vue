@@ -176,18 +176,38 @@ const user = useUserStore()
 user.initializeAuth()
 
 onMounted(async () => {
+  // 인증 상태가 준비될 때까지 대기
+  let attempts = 0
+  const maxAttempts = 50 // 5초 (100ms * 50)
+  
+  while (!user.authReady && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 100))
+    attempts++
+  }
+  
+  console.log('파트너 요청 목록 페이지 - 인증 상태:', {
+    isLoggedIn: user.isLoggedIn,
+    role: user.role,
+    authReady: user.authReady,
+    currentUser: user.currentUser?.uid,
+    approvalStatus: user.user?.approvalStatus
+  })
+  
   if (!user.isLoggedIn || user.role !== 'partner') {
+    console.log('로그인되지 않았거나 파트너가 아님, 로그인 페이지로 이동')
     navigateTo('/login')
     return
   }
   
   // 파트너 승인 상태 확인
   if (user.user?.approvalStatus !== 'approved') {
+    console.log('승인되지 않은 파트너, 대기 페이지로 이동')
     // 승인되지 않은 파트너는 대기 페이지로 이동
     navigateTo('/partner/pending')
     return
   }
   
+  console.log('인증 확인 완료, 데이터 로드 시작')
   loadRequests()
   calculateUnreadChatCount()
 })
