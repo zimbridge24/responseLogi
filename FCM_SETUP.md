@@ -102,3 +102,4 @@ firebase deploy --only functions
 ### 7.3 VAPID 키 오류
 - Firebase Console에서 생성한 VAPID 키와 `.env` 파일의 키가 일치하는지 확인
 
+
