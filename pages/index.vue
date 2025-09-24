@@ -20,34 +20,76 @@
       <div class="flex items-center space-x-8">
         <!-- 로그인되지 않은 경우 -->
         <template v-if="!user.isLoggedIn">
-          <NuxtLink 
-            to="/login" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-          >
-            로그인
-          </NuxtLink>
+          <div class="flex items-center space-x-4">
+            <div class="relative group">
+              <button class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200">
+                로그인
+              </button>
+              <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <NuxtLink 
+                  to="/customer/login" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
+                >
+                  고객 로그인
+                </NuxtLink>
+                <NuxtLink 
+                  to="/login" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
+                >
+                  파트너 로그인
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
           <div class="w-px h-6 bg-gray-300"></div>
-          <NuxtLink 
-            to="/register" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-          >
-            회원가입
-          </NuxtLink>
+          <div class="flex items-center space-x-4">
+            <div class="relative group">
+              <button class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200">
+                회원가입
+              </button>
+              <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <NuxtLink 
+                  to="/customer/register" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
+                >
+                  고객 회원가입
+                </NuxtLink>
+                <NuxtLink 
+                  to="/partner/register" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
+                >
+                  파트너 회원가입
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
         </template>
         
         <!-- 로그인된 경우 -->
         <template v-else>
           <div class="text-gray-800 font-semibold text-lg">
-            {{ user.user?.name || '사용자' }}님
+            {{ user.role === 'customer' ? '고객' : user.role === 'partner' ? '파트너' : '사용자' }}님
           </div>
           <div class="w-px h-6 bg-gray-300"></div>
-          <!-- 고객인 경우 내 요청 버튼 표시 -->
+          
+          <!-- 역할이 없는 경우 (회원가입 미완료) -->
+          <template v-if="!user.role">
+            <NuxtLink 
+              to="/partner/register" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            >
+              회원가입 완료하기
+            </NuxtLink>
+            <div class="w-px h-6 bg-gray-300"></div>
+          </template>
+          
+          <!-- 고객인 경우 신청한 견적 버튼 표시 -->
           <NuxtLink 
             v-if="user.role === 'customer'"
             to="/customer/requests" 
             class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
           >
-            내 요청
+            신청한 견적
           </NuxtLink>
           <!-- 파트너인 경우 견적 신청서 버튼 표시 -->
           <NuxtLink 
@@ -105,41 +147,132 @@
           물류창고 견적, 한 번에 쉽고 빠르게
         </p>
         <!-- 로그인되지 않은 경우 -->
-        <div v-if="!user.isLoggedIn" class="flex justify-center animate-bounce-in">
-          <NuxtLink 
-            to="/request" 
-            class="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-          >
-            <span class="relative z-10 flex items-center space-x-3">
-              <span>🚀</span>
-              <span>견적 신청하기</span>
-            </span>
-            <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </NuxtLink>
+        <div v-if="!user.isLoggedIn" class="flex flex-col items-center space-y-6 animate-bounce-in">
+          <!-- 견적 신청하기 버튼 -->
+          <div class="mb-4">
+            <NuxtLink 
+              to="/customer/login" 
+              class="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-3">
+                <span>🚀</span>
+                <span>견적 신청하기</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+          </div>
+          
+          <div class="text-center mb-4">
+            <p class="text-lg text-gray-600 mb-6">간편한 전화번호 인증으로 시작하세요!</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <NuxtLink 
+              to="/customer/register" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>👤</span>
+                <span>고객 회원가입</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+            
+            <NuxtLink 
+              to="/partner/register" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>🏢</span>
+                <span>파트너 회원가입</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+          </div>
+          
+          <div class="text-center">
+            <p class="text-sm text-gray-500 mb-2">이미 계정이 있으신가요?</p>
+              <div class="flex space-x-4 justify-center">
+                <NuxtLink 
+                  to="/customer/login" 
+                  class="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
+                >
+                  고객 로그인
+                </NuxtLink>
+                <span class="text-gray-300">|</span>
+                <NuxtLink 
+                  to="/login" 
+                  class="text-green-600 hover:text-green-800 font-semibold transition-colors"
+                >
+                  파트너 로그인
+                </NuxtLink>
+              </div>
+          </div>
+        </div>
+
+        <!-- 로그인되었지만 역할이 없는 경우 (회원가입 미완료) -->
+        <div v-else-if="user.isLoggedIn && !user.role" class="flex flex-col items-center space-y-6 animate-bounce-in">
+          <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">회원가입을 완료해주세요</h2>
+            <p class="text-lg text-gray-600 mb-6">전화번호 인증은 완료되었지만, 회원가입이 완료되지 않았습니다.</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <NuxtLink 
+              to="/partner/register" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>🏢</span>
+                <span>파트너 회원가입 완료</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+          </div>
         </div>
 
         <!-- 로그인된 고객인 경우 -->
-        <div v-else-if="user.isLoggedIn && user.role === 'customer'" class="flex flex-col sm:flex-row gap-4 justify-center animate-bounce-in">
-          <NuxtLink 
-            to="/request" 
-            class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-          >
-            <span class="relative z-10 flex items-center space-x-2">
-              <span>🚀</span>
-              <span>견적 신청하기</span>
-            </span>
-            <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </NuxtLink>
-          <NuxtLink 
-            to="/customer/requests" 
-            class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-          >
-            <span class="relative z-10 flex items-center space-x-2">
-              <span>📋</span>
-              <span>신청한 견적 확인</span>
-            </span>
-            <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </NuxtLink>
+        <div v-else-if="user.isLoggedIn && user.role === 'customer'" class="flex flex-col items-center space-y-6 animate-bounce-in">
+          <!-- 견적 신청하기 버튼 -->
+          <div class="mb-4">
+            <NuxtLink 
+              to="/request" 
+              class="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-3">
+                <span>🚀</span>
+                <span>견적 신청하기</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+          </div>
+          
+          <div class="text-center mb-4">
+            <p class="text-lg text-gray-600 mb-6">빠르고 정확한 견적을 받아보세요!</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <NuxtLink 
+              to="/customer/requests" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>📋</span>
+                <span>신청한 견적 확인</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+            <NuxtLink 
+              to="/customer/completed-quotes" 
+              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <span class="relative z-10 flex items-center space-x-2">
+                <span>✅</span>
+                <span>완료된 견적</span>
+              </span>
+              <div class="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NuxtLink>
+          </div>
         </div>
 
         <!-- 파트너인 경우 -->

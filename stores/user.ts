@@ -237,6 +237,45 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 관리자 사용자 설정 (하드코딩된 로그인용)
+  function setAdminUser(adminData: any) {
+    currentUser.value = {
+      uid: adminData.uid,
+      email: adminData.email,
+      displayName: adminData.name,
+      phoneNumber: adminData.phone,
+      // Firebase User 타입에 맞는 기본값들
+      emailVerified: true,
+      isAnonymous: false,
+      metadata: {} as any,
+      providerData: [],
+      refreshToken: 'admin-token',
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => 'admin-token',
+      getIdTokenResult: async () => ({} as any),
+      reload: async () => {},
+      toJSON: () => ({})
+    }
+    
+    userProfile.value = {
+      uid: adminData.uid,
+      email: adminData.email,
+      name: adminData.name,
+      companyName: adminData.companyName,
+      phone: adminData.phone,
+      role: 'admin',
+      approvalStatus: 'approved',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    role.value = 'admin'
+    authReady.value = true
+    
+    console.log('관리자 사용자 설정 완료:', adminData.name)
+  }
+
   return {
     currentUser,
     userProfile,
@@ -256,6 +295,7 @@ export const useUserStore = defineStore('user', () => {
     redirectAfterLogin,
     initializeAuth,
     initializeFCM,
+    setAdminUser,
     authReady
   }
 })

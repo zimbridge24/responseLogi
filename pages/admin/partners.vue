@@ -26,8 +26,8 @@
         <div class="flex space-x-2">
           <select v-model="selectedStatus" class="form-input">
             <option value="">모든 상태</option>
-            <option value="verified">인증됨</option>
-            <option value="unverified">미인증</option>
+            <option value="verified">승인됨</option>
+            <option value="unverified">미승인</option>
           </select>
         </div>
       </div>
@@ -40,11 +40,11 @@
         </div>
         <div class="card text-center">
           <div class="text-2xl font-bold text-green-600">{{ stats.verified }}</div>
-          <div class="text-sm text-gray-600">인증됨</div>
+          <div class="text-sm text-gray-600">승인됨</div>
         </div>
         <div class="card text-center">
           <div class="text-2xl font-bold text-yellow-600">{{ stats.unverified }}</div>
-          <div class="text-sm text-gray-600">미인증</div>
+          <div class="text-sm text-gray-600">미승인</div>
         </div>
       </div>
 
@@ -57,15 +57,16 @@
           :show-actions="true"
           @edit="viewPartner"
         >
-          <template #cell-verified="{ value }">
+          <template #cell-approvalStatus="{ value }">
             <span
               :class="{
-                'text-green-600': value,
-                'text-yellow-600': !value
+                'text-green-600': value === 'approved',
+                'text-yellow-600': value === 'pending',
+                'text-red-600': value === 'rejected'
               }"
               class="font-medium"
             >
-              {{ value ? '인증됨' : '미인증' }}
+              {{ value === 'approved' ? '승인됨' : value === 'pending' ? '대기중' : '거절됨' }}
             </span>
           </template>
 
@@ -84,7 +85,7 @@
               @click="toggleVerification(row)"
               class="text-green-600 hover:text-green-800 mr-2"
             >
-              {{ row.verified ? '인증 취소' : '인증' }}
+              {{ row.approvalStatus === 'approved' ? '승인 취소' : '승인' }}
             </button>
             <button
               @click="deletePartner(row)"
@@ -129,8 +130,19 @@
               <p class="whitespace-pre-wrap">{{ selectedPartner.description }}</p>
             </div>
             <div>
-              <label class="font-medium">인증 상태:</label>
-              <p class="font-medium">{{ selectedPartner.verified ? '인증됨' : '미인증' }}</p>
+              <label class="font-medium">승인 상태:</label>
+              <p class="font-medium">
+                <span
+                  :class="{
+                    'text-green-600': selectedPartner.approvalStatus === 'approved',
+                    'text-yellow-600': selectedPartner.approvalStatus === 'pending',
+                    'text-red-600': selectedPartner.approvalStatus === 'rejected'
+                  }"
+                >
+                  {{ selectedPartner.approvalStatus === 'approved' ? '승인됨' : 
+                     selectedPartner.approvalStatus === 'pending' ? '대기중' : '거절됨' }}
+                </span>
+              </p>
             </div>
             <div>
               <label class="font-medium">가입일:</label>
@@ -144,55 +156,77 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
 definePageMeta({
   middleware: 'role-admin'
 })
 
 const { userProfile, logout } = useUserStore()
 
-// Mock data for partners - in real app, this would come from a store
-const partners = ref([
-  {
-    id: '1',
-    name: '홍길동',
-    email: 'hong@example.com',
-    phone: '010-1234-5678',
-    company: 'ABC 개발사',
-    description: '웹 개발 전문가',
-    verified: true,
-    createdAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    name: '김철수',
-    email: 'kim@example.com',
-    phone: '010-9876-5432',
-    company: 'XYZ 디자인',
-    description: 'UI/UX 디자이너',
-    verified: false,
-    createdAt: new Date('2024-02-20')
-  }
-])
-
+const partners = ref<any[]>([])
 const selectedStatus = ref('')
 const selectedPartner = ref(null)
 const loading = ref(false)
+
+// 실제 Firestore에서 파트너 데이터 가져오기
+const loadPartners = async () => {
+  loading.value = true
+  try {
+    const { $db } = useNuxtApp()
+    const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore')
+    
+    // role이 'partner'인 모든 사용자 가져오기
+    const q = query(
+      collection($db, 'users'),
+      where('role', '==', 'partner'),
+      orderBy('createdAt', 'desc')
+    )
+    
+    const querySnapshot = await getDocs(q)
+    const partnersList: any[] = []
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data()
+      partnersList.push({
+        id: doc.id,
+        name: data.name,
+        email: data.email || '이메일 없음',
+        phone: data.phone,
+        company: data.companyName,
+        description: data.description || '',
+        verified: data.approvalStatus === 'approved',
+        approvalStatus: data.approvalStatus,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
+      })
+    })
+    
+    partners.value = partnersList
+    console.log('파트너 목록 로드 완료:', partnersList)
+    
+  } catch (error) {
+    console.error('파트너 목록 로드 실패:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
 const columns = [
   { key: 'name', label: '이름' },
   { key: 'email', label: '이메일' },
   { key: 'company', label: '회사' },
-  { key: 'verified', label: '인증 상태' },
+  { key: 'phone', label: '전화번호' },
+  { key: 'approvalStatus', label: '승인 상태' },
   { key: 'createdAt', label: '가입일', format: 'date' },
 ]
 
 const filteredPartners = computed(() => {
   if (!selectedStatus.value) return partners.value
   if (selectedStatus.value === 'verified') {
-    return partners.value.filter(partner => partner.verified)
+    return partners.value.filter(partner => partner.approvalStatus === 'approved')
   }
   if (selectedStatus.value === 'unverified') {
-    return partners.value.filter(partner => !partner.verified)
+    return partners.value.filter(partner => partner.approvalStatus !== 'approved')
   }
   return partners.value
 })
@@ -200,8 +234,8 @@ const filteredPartners = computed(() => {
 const stats = computed(() => {
   return {
     total: partners.value.length,
-    verified: partners.value.filter(partner => partner.verified).length,
-    unverified: partners.value.filter(partner => !partner.verified).length,
+    verified: partners.value.filter(partner => partner.approvalStatus === 'approved').length,
+    unverified: partners.value.filter(partner => partner.approvalStatus !== 'approved').length,
   }
 })
 
@@ -211,24 +245,47 @@ const viewPartner = (partner: any) => {
 
 const toggleVerification = async (partner: any) => {
   try {
-    // In real app, this would call an API
-    partner.verified = !partner.verified
-    console.log('Verification toggled for partner:', partner.id)
+    const { $db } = useNuxtApp()
+    const { doc, updateDoc } = await import('firebase/firestore')
+    
+    const newStatus = partner.approvalStatus === 'approved' ? 'pending' : 'approved'
+    
+    await updateDoc(doc($db, 'users', partner.id), {
+      approvalStatus: newStatus,
+      updatedAt: new Date()
+    })
+    
+    // 로컬 데이터 업데이트
+    partner.approvalStatus = newStatus
+    partner.verified = newStatus === 'approved'
+    
+    console.log('파트너 승인 상태 변경:', partner.id, newStatus)
+    alert(`파트너가 ${newStatus === 'approved' ? '승인' : '대기'}되었습니다.`)
   } catch (error) {
-    console.error('Error toggling verification:', error)
+    console.error('승인 상태 변경 실패:', error)
+    alert('승인 상태 변경에 실패했습니다.')
   }
 }
 
 const deletePartner = async (partner: any) => {
   if (confirm('정말로 이 파트너를 삭제하시겠습니까?')) {
     try {
-      // In real app, this would call an API
+      const { $db } = useNuxtApp()
+      const { doc, deleteDoc } = await import('firebase/firestore')
+      
+      await deleteDoc(doc($db, 'users', partner.id))
+      
+      // 로컬 데이터에서 제거
       const index = partners.value.findIndex(p => p.id === partner.id)
       if (index > -1) {
         partners.value.splice(index, 1)
       }
+      
+      console.log('파트너 삭제 완료:', partner.id)
+      alert('파트너가 삭제되었습니다.')
     } catch (error) {
-      console.error('Error deleting partner:', error)
+      console.error('파트너 삭제 실패:', error)
+      alert('파트너 삭제에 실패했습니다.')
     }
   }
 }
@@ -236,6 +293,11 @@ const deletePartner = async (partner: any) => {
 const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString('ko-KR')
 }
+
+// 페이지 로드 시 파트너 목록 가져오기
+onMounted(() => {
+  loadPartners()
+})
 </script>
 
 

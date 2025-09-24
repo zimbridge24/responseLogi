@@ -22,6 +22,20 @@
           {{ user.user?.name || 'Admin' }}님
         </div>
         <div class="w-px h-6 bg-gray-300"></div>
+        <NuxtLink 
+          to="/admin/approvals"
+          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+        >
+          승인 관리
+        </NuxtLink>
+        <div class="w-px h-6 bg-gray-300"></div>
+        <NuxtLink 
+          to="/admin/partners"
+          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+        >
+          파트너 관리
+        </NuxtLink>
+        <div class="w-px h-6 bg-gray-300"></div>
         <button 
           @click="handleLogout"
           class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
@@ -106,7 +120,16 @@
         <!-- Main Content Area -->
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20">
           <div class="p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">파트너 승인 관리</h2>
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-gray-900">파트너 승인 관리</h2>
+              <NuxtLink 
+                to="/admin/approvals"
+                class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <span>📋</span>
+                <span>상세 승인 관리</span>
+              </NuxtLink>
+            </div>
             
             <!-- Loading State -->
             <div v-if="loading" class="flex justify-center items-center h-48">

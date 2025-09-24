@@ -68,16 +68,6 @@
       <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 max-w-3xl w-full">
         <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">견적 신청하기</h1>
 
-        <!-- 로그인된 사용자 정보 표시 -->
-        <div v-if="user.isLoggedIn" class="mb-8 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <h3 class="text-lg font-semibold text-blue-900 mb-2">신청자 정보</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div><span class="font-medium text-blue-800">회사명:</span> {{ user.user?.companyName || '정보 없음' }}</div>
-            <div><span class="font-medium text-blue-800">담당자:</span> {{ user.user?.name || '정보 없음' }}</div>
-            <div><span class="font-medium text-blue-800">연락처:</span> {{ user.user?.phone || '정보 없음' }}</div>
-            <div><span class="font-medium text-blue-800">이메일:</span> {{ user.user?.email || '정보 없음' }}</div>
-          </div>
-        </div>
 
         <!-- 견적 신청 폼 -->
         <form v-if="!successMessage" @submit.prevent="submitRequest" class="space-y-6">
