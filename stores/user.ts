@@ -276,6 +276,27 @@ export const useUserStore = defineStore('user', () => {
     console.log('관리자 사용자 설정 완료:', adminData.name)
   }
 
+  // 일반 사용자 설정 (파트너/고객 로그인용)
+  const setUser = async (firebaseUser: User, userData: any) => {
+    currentUser.value = firebaseUser
+    userProfile.value = {
+      uid: firebaseUser.uid,
+      email: userData.email || firebaseUser.email || '',
+      name: userData.name || firebaseUser.displayName || '',
+      companyName: userData.companyName || '',
+      phone: userData.phone || firebaseUser.phoneNumber || '',
+      role: userData.role || 'customer',
+      approvalStatus: userData.approvalStatus || 'approved',
+      createdAt: userData.createdAt || new Date(),
+      updatedAt: userData.updatedAt || new Date()
+    }
+    
+    role.value = userData.role || 'customer'
+    authReady.value = true
+    
+    console.log('사용자 설정 완료:', userData.name, '역할:', userData.role)
+  }
+
   return {
     currentUser,
     userProfile,
@@ -296,6 +317,7 @@ export const useUserStore = defineStore('user', () => {
     initializeAuth,
     initializeFCM,
     setAdminUser,
+    setUser,
     authReady
   }
 })
