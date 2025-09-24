@@ -169,15 +169,30 @@
                       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div class="flex items-center space-x-2">
                           <span class="text-green-500">✓</span>
-                          <span class="text-sm text-gray-600">사업자등록증</span>
+                          <span 
+                            @click="viewDocument(partner.kycDocuments?.businessLicense?.downloadUrl)"
+                            class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline hover:no-underline transition-all"
+                          >
+                            사업자등록증
+                          </span>
                         </div>
                         <div class="flex items-center space-x-2">
                           <span class="text-green-500">✓</span>
-                          <span class="text-sm text-gray-600">보험 증권</span>
+                          <span 
+                            @click="viewDocument(partner.kycDocuments?.insurancePolicy?.downloadUrl)"
+                            class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline hover:no-underline transition-all"
+                          >
+                            보험 증권
+                          </span>
                         </div>
                         <div class="flex items-center space-x-2">
                           <span class="text-green-500">✓</span>
-                          <span class="text-sm text-gray-600">창고 사진</span>
+                          <span 
+                            @click="viewDocument(partner.kycDocuments?.warehousePhoto?.downloadUrl)"
+                            class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline hover:no-underline transition-all"
+                          >
+                            창고 사진
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -210,6 +225,36 @@
         </div>
       </div>
     </main>
+
+    <!-- Document Viewer Modal -->
+    <div v-if="documentViewerUrl" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4" style="z-index: 9999;">
+      <div class="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b">
+          <h3 class="text-lg font-semibold">문서 보기</h3>
+          <button 
+            @click="documentViewerUrl = null"
+            class="text-gray-400 hover:text-gray-600"
+          >
+            <span class="text-2xl">×</span>
+          </button>
+        </div>
+        <div class="p-4">
+          <!-- 이미지 파일인 경우 -->
+          <img 
+            v-if="documentViewerUrl && isImageFile(documentViewerUrl)" 
+            :src="documentViewerUrl" 
+            class="w-full h-[70vh] object-contain border-0"
+            alt="문서 이미지"
+          />
+          <!-- PDF 파일인 경우 -->
+          <iframe 
+            v-else-if="documentViewerUrl" 
+            :src="documentViewerUrl" 
+            class="w-full h-[70vh] border-0"
+          ></iframe>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -239,6 +284,7 @@ const totalRequests = ref(0)
 const totalQuotes = ref(0)
 const completedQuotes = ref(0)
 const pendingPartnersList = ref([])
+const documentViewerUrl = ref<string | null>(null)
 
 // 데이터 로드
 const loadData = async () => {
@@ -369,6 +415,44 @@ const rejectPartner = async (partnerId: string) => {
     console.error('파트너 거절 실패:', error)
     alert('파트너 거절에 실패했습니다.')
   }
+}
+
+// 개별 문서 보기
+const viewDocument = async (url: string) => {
+  if (!url) {
+    alert('문서가 없습니다.')
+    return
+  }
+  try {
+    // Firestore에서 저장된 파일인지 확인
+    if (url.startsWith('firestore://files/')) {
+      const fileId = url.replace('firestore://files/', '')
+      const { $db } = useNuxtApp()
+      const { doc, getDoc } = await import('firebase/firestore')
+      
+      const fileDoc = await getDoc(doc($db, 'files', fileId))
+      if (fileDoc.exists()) {
+        const fileData = fileDoc.data()
+        // Base64 데이터를 data URL로 변환
+        const dataUrl = `data:${fileData.fileType};base64,${fileData.base64Data}`
+        documentViewerUrl.value = dataUrl
+      } else {
+        console.error('파일을 찾을 수 없습니다:', fileId)
+        alert('파일을 찾을 수 없습니다.')
+      }
+    } else {
+      // 일반 URL인 경우
+      documentViewerUrl.value = url
+    }
+  } catch (error) {
+    console.error('파일 로드 실패:', error)
+    alert('파일을 불러올 수 없습니다.')
+  }
+}
+
+// 이미지 파일인지 확인
+const isImageFile = (url: string) => {
+  return url.startsWith('data:image/') || url.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
 }
 
 // 로그아웃 함수

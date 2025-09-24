@@ -240,7 +240,7 @@
     </div>
 
     <!-- Document Viewer Modal -->
-    <div v-if="documentViewerUrl" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-60">
+    <div v-if="documentViewerUrl" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4" style="z-index: 9999;">
       <div class="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         <div class="flex items-center justify-between p-4 border-b">
           <h3 class="text-lg font-semibold">문서 보기</h3>
