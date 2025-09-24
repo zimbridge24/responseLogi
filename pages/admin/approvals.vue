@@ -295,6 +295,7 @@ const pendingPartners = ref<any[]>([])
 
 // 실제 Firestore에서 파트너 데이터 가져오기
 const loadPendingPartners = async () => {
+  loading.value = true
   try {
     const { $db } = useNuxtApp()
     const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore')
@@ -303,8 +304,7 @@ const loadPendingPartners = async () => {
     const q = query(
       collection($db, 'users'),
       where('role', '==', 'partner'),
-      where('approvalStatus', '==', 'pending'),
-      orderBy('createdAt', 'desc')
+      where('approvalStatus', '==', 'pending')
     )
     
     const querySnapshot = await getDocs(q)
@@ -319,6 +319,13 @@ const loadPendingPartners = async () => {
       })
     })
     
+    // 생성일 기준으로 정렬
+    partners.sort((a, b) => {
+      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+      return dateB.getTime() - dateA.getTime() // 최신순
+    })
+    
     pendingPartners.value = partners
     console.log('승인 대기 파트너 목록:', partners)
     
@@ -330,6 +337,8 @@ const loadPendingPartners = async () => {
     
   } catch (error) {
     console.error('파트너 목록 로드 실패:', error)
+  } finally {
+    loading.value = false
   }
 }
 
