@@ -1,44 +1,49 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen gradient-bg-blue flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
       <!-- Header -->
       <div class="text-center">
-        <h2 class="text-3xl font-bold text-gray-900">
+        <div class="mx-auto h-16 w-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+          <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h2 class="text-3xl font-bold text-white mb-2">
           로그인
         </h2>
-        <p class="mt-2 text-sm text-gray-600">
+        <p class="text-blue-100">
           계정이 없으신가요?
-          <NuxtLink to="/register" class="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+          <NuxtLink to="/register" class="font-semibold text-white hover:text-blue-100 transition-colors underline">
             회원가입하기
           </NuxtLink>
         </p>
       </div>
 
       <!-- Form -->
-      <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
+      <div class="card">
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- Email -->
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+            <label for="email" class="form-label">이메일</label>
             <input
               id="email"
               v-model="formData.email"
               type="email"
               required
-              class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+              class="form-input"
               placeholder="example@email.com"
             />
           </div>
 
           <!-- Password -->
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
+            <label for="password" class="form-label">비밀번호</label>
             <input
               id="password"
               v-model="formData.password"
               type="password"
               required
-              class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+              class="form-input"
               placeholder="비밀번호를 입력하세요"
             />
           </div>
@@ -50,7 +55,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div class="ml-3">
-                <p class="text-sm text-red-800">{{ error }}</p>
+                <p class="text-sm text-red-800 font-medium">{{ error }}</p>
               </div>
             </div>
           </div>
@@ -60,9 +65,9 @@
             <button
               type="submit"
               :disabled="user.loading"
-              class="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]"
+              class="btn-primary w-full flex justify-center items-center py-4 px-6 text-lg font-semibold"
             >
-              <svg v-if="user.loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <svg v-if="user.loading" class="loading-spinner -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>

@@ -2,8 +2,15 @@ export default defineNuxtConfig({
   modules: [
     '@pinia/nuxt',
     '@vee-validate/nuxt',
+    '@nuxtjs/tailwindcss',
   ],
   css: ['~/assets/css/main.css'],
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
+    },
+  },
   runtimeConfig: {
     public: {
       FIREBASE_API_KEY: process.env.NUXT_PUBLIC_FIREBASE_API_KEY,

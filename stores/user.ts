@@ -14,8 +14,23 @@ export const useUserStore = defineStore('user', () => {
   const authReady = ref(false)
   const fcmToken = ref<string | null>(null)
 
-  const auth = getAuth()
+  let auth: any = null
   let firestoreService: FirestoreService | null = null
+
+  // Firebase 앱이 초기화된 후 auth 인스턴스 가져오기
+  const getAuthInstance = () => {
+    if (!auth) {
+      try {
+        const { $auth } = useNuxtApp()
+        auth = $auth
+        console.log('Auth instance retrieved:', !!auth)
+      } catch (error) {
+        console.error('Failed to get auth instance:', error)
+        return null
+      }
+    }
+    return auth
+  }
 
   // Initialize Firestore service when needed
   const getFirestoreService = () => {
@@ -33,7 +48,13 @@ export const useUserStore = defineStore('user', () => {
     console.log('Initializing auth state listener...')
     authInitialized.value = true
     
-    onAuthStateChanged(auth, async (user) => {
+    const authInstance = getAuthInstance()
+    if (!authInstance) {
+      console.error('Firebase auth not initialized')
+      return
+    }
+    
+    onAuthStateChanged(authInstance, async (user) => {
       console.log('Auth state changed:', user ? 'User logged in' : 'User logged out')
       currentUser.value = user
       console.log('currentUser.value set to:', currentUser.value?.uid)
@@ -99,11 +120,29 @@ export const useUserStore = defineStore('user', () => {
   async function login(email: string, password: string) {
     loading.value = true
     loginAttempted.value = true
-    initializeAuth()
     
     try {
       console.log('Starting login process for:', email)
-      await signInWithEmailAndPassword(auth, email, password)
+      
+      // Firebase 초기화를 기다림
+      let authInstance = getAuthInstance()
+      let attempts = 0
+      const maxAttempts = 10
+      
+      while (!authInstance && attempts < maxAttempts) {
+        console.log(`Waiting for Firebase auth initialization... attempt ${attempts + 1}`)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        authInstance = getAuthInstance()
+        attempts++
+      }
+      
+      if (!authInstance) {
+        throw new Error('Firebase auth not initialized after waiting')
+      }
+      
+      console.log('Firebase auth is ready, proceeding with login')
+      initializeAuth()
+      await signInWithEmailAndPassword(authInstance, email, password)
       console.log('Firebase auth successful')
   
       // ✅ auth state와 사용자 프로필이 준비될 때까지 기다렸다가 redirect
@@ -140,7 +179,11 @@ export const useUserStore = defineStore('user', () => {
   async function logout() {
     loading.value = true
     try {
-      await signOut(auth)
+      const authInstance = getAuthInstance()
+      if (!authInstance) {
+        throw new Error('Firebase auth not initialized')
+      }
+      await signOut(authInstance)
       currentUser.value = null
       role.value = null
       userProfile.value = null

@@ -189,13 +189,13 @@
           </div>
 
           <!-- Quote Details -->
-          <div class="space-y-6">
+          <div v-if="selectedQuote" class="space-y-6">
             <!-- Partner Info -->
             <div>
               <h3 class="text-lg font-semibold text-gray-900 mb-3">파트너 정보</h3>
               <div class="bg-gray-50 rounded-lg p-4">
-                <p class="font-medium text-gray-900">{{ quote.partnerCompany }}</p>
-                <p class="text-sm text-gray-600">{{ quote.partnerName }}</p>
+                <p class="font-medium text-gray-900">{{ selectedQuote.partnerCompany || '정보 없음' }}</p>
+                <p class="text-sm text-gray-600">{{ selectedQuote.partnerName || '정보 없음' }}</p>
               </div>
             </div>
 
@@ -205,15 +205,15 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="text-sm text-gray-600">팔렛 수</label>
-                  <p class="font-semibold text-gray-900">{{ selectedQuote.pallets }}개</p>
+                  <p class="font-semibold text-gray-900">{{ selectedQuote.pallets || 0 }}개</p>
                 </div>
                 <div>
                   <label class="text-sm text-gray-600">박스 수</label>
-                  <p class="font-semibold text-gray-900">{{ selectedQuote.boxes }}개</p>
+                  <p class="font-semibold text-gray-900">{{ selectedQuote.boxes || 0 }}개</p>
                 </div>
                 <div>
                   <label class="text-sm text-gray-600">보관 기간</label>
-                  <p class="font-semibold text-gray-900">{{ selectedQuote.storagePeriod }}{{ getPeriodUnit(selectedQuote.storagePeriodUnit) }}</p>
+                  <p class="font-semibold text-gray-900">{{ selectedQuote.storagePeriod || 0 }}{{ getPeriodUnit(selectedQuote.storagePeriodUnit) }}</p>
                 </div>
                 <div v-if="selectedQuote.locationPreference">
                   <label class="text-sm text-gray-600">선호 위치</label>
@@ -228,19 +228,19 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="text-sm text-gray-600">입고비</label>
-                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.inboundFee) }}원</p>
+                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.inboundFee || 0) }}원</p>
                 </div>
                 <div>
                   <label class="text-sm text-gray-600">보관비</label>
-                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.storageFee) }}원</p>
+                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.storageFee || 0) }}원</p>
                 </div>
                 <div>
                   <label class="text-sm text-gray-600">출고비</label>
-                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.outboundFee) }}원</p>
+                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.outboundFee || 0) }}원</p>
                 </div>
                 <div>
                   <label class="text-sm text-gray-600">WMS</label>
-                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.wmsFee) }}원</p>
+                  <p class="text-lg font-semibold text-gray-900">{{ formatPrice(selectedQuote.wmsFee || 0) }}원</p>
                 </div>
               </div>
             </div>
@@ -262,7 +262,7 @@
               <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
                 <div>
                   <span class="font-medium">수락일:</span>
-                  {{ formatDate(selectedQuote.acceptedAt) }}
+                  {{ selectedQuote.acceptedAt ? formatDate(selectedQuote.acceptedAt) : '정보 없음' }}
                 </div>
                 <div>
                   <span class="font-medium">상태:</span>
@@ -409,6 +409,7 @@ const formatDate = (date: Date) => {
 
 // 기간 단위 변환
 const getPeriodUnit = (unit: string) => {
+  if (!unit) return ''
   const units = {
     'day': '일',
     'month': '개월',
