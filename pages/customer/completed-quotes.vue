@@ -10,24 +10,19 @@
     <!-- Navigation -->
     <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-          <span class="text-white text-xl">📦</span>
-        </div>
-        <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          응답하라 창고
-        </span>
+        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white text-xl">📦</span>
+          </div>
+          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            응답하라 창고
+          </span>
+        </NuxtLink>
       </div>
       <div class="flex items-center space-x-8">
         <div class="text-gray-800 font-semibold text-lg">
           {{ user.user?.name || '사용자' }}님
         </div>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          홈으로
-        </NuxtLink>
         <div class="w-px h-6 bg-gray-300"></div>
         <NuxtLink 
           to="/customer/requests" 

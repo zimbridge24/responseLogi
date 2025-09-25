@@ -10,24 +10,19 @@
     <!-- Navigation -->
     <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-          <span class="text-white text-xl">📦</span>
-        </div>
-        <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          응답하라 창고
-        </span>
+        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white text-xl">📦</span>
+          </div>
+          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            응답하라 창고
+          </span>
+        </NuxtLink>
       </div>
       <div class="flex items-center space-x-8">
         <div class="text-gray-800 font-semibold text-lg">
           {{ user.user?.name || '사용자' }}님
         </div>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          홈으로
-        </NuxtLink>
         <div class="w-px h-6 bg-gray-300"></div>
         <NuxtLink 
           to="/chat-list" 
@@ -103,14 +98,39 @@
               </div>
             </div>
 
-            <!-- 상태 표시 -->
-            <div class="text-center mt-4">
+            <!-- 상태 표시 및 액션 버튼들 -->
+            <div class="mt-4 flex justify-between items-center">
+              <!-- 상태 표시 -->
               <span 
                 :class="getStatusClass(request.status)"
                 class="px-3 py-1 rounded-full text-sm font-medium"
               >
                 {{ getStatusText(request.status) }}
               </span>
+              
+              <!-- 액션 버튼들 -->
+              <div class="flex items-center space-x-2">
+                <!-- 취소 완료된 경우 휴지통 버튼 -->
+                <button 
+                  v-if="request.status === 'cancelled'"
+                  @click.stop="deleteRequest(request.id, index)"
+                  class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200"
+                  title="삭제"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+                
+                <!-- 대기 중인 경우 취소 버튼 -->
+                <button 
+                  v-if="request.status === 'pending'"
+                  @click.stop="cancelRequest(request.id, index)"
+                  class="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200"
+                >
+                  취소
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -460,6 +480,52 @@ const handleLogout = async () => {
   }
 }
 
+// 견적 취소
+const cancelRequest = async (requestId: string, index: number) => {
+  if (!confirm('견적요청이 취소되고 목록에서 삭제됩니다. 진행 하시겠습니까?')) {
+    return
+  }
+  
+  try {
+    const { $db } = useNuxtApp()
+    const firestoreService = new FirestoreService($db)
+    
+    // Firestore에서 상태를 'cancelled'로 업데이트
+    await firestoreService.updateWarehouseRequest(requestId, { status: 'cancelled' })
+    
+    // 로컬 배열에서 상태 업데이트
+    requests.value[index].status = 'cancelled'
+    
+    console.log('견적 신청이 취소되었습니다:', requestId)
+  } catch (error) {
+    console.error('견적 신청 취소 실패:', error)
+    alert('견적 신청 취소에 실패했습니다. 다시 시도해주세요.')
+  }
+}
+
+// 견적 삭제
+const deleteRequest = async (requestId: string, index: number) => {
+  if (!confirm('이 견적 신청을 완전히 삭제하시겠습니까?')) {
+    return
+  }
+  
+  try {
+    const { $db } = useNuxtApp()
+    const firestoreService = new FirestoreService($db)
+    
+    // Firestore에서 삭제
+    await firestoreService.deleteWarehouseRequest(requestId)
+    
+    // 로컬 배열에서 제거
+    requests.value.splice(index, 1)
+    
+    console.log('견적 신청이 삭제되었습니다:', requestId)
+  } catch (error) {
+    console.error('견적 신청 삭제 실패:', error)
+    alert('견적 신청 삭제에 실패했습니다. 다시 시도해주세요.')
+  }
+}
+
 // 날짜 포맷팅
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('ko-KR', {
@@ -480,6 +546,8 @@ const getStatusClass = (status: string) => {
       return 'bg-green-100 text-green-800'
     case 'rejected':
       return 'bg-red-100 text-red-800'
+    case 'cancelled':
+      return 'bg-gray-100 text-gray-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }
@@ -496,6 +564,8 @@ const getStatusText = (status: string) => {
       return '수락됨'
     case 'rejected':
       return '거절됨'
+    case 'cancelled':
+      return '취소완료'
     default:
       return '알 수 없음'
   }

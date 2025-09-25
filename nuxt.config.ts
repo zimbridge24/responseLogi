@@ -28,5 +28,13 @@ export default defineNuxtConfig({
     workbox: {
       enabled: false // FCM을 사용하므로 Workbox 비활성화
     }
+  },
+  // CSP 설정 (reCAPTCHA 허용)
+  security: {
+    headers: {
+      contentSecurityPolicy: {
+        'frame-ancestors': ["'self'", "https://www.google.com", "https://www.gstatic.com"]
+      }
+    }
   }
 })

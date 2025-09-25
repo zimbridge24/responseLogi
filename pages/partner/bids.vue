@@ -7,7 +7,7 @@
           <div class="flex items-center space-x-8">
             <h1 class="text-xl font-bold text-gray-900">견적 플랫폼</h1>
             <div class="flex space-x-4">
-              <NuxtLink to="/partner/requests" class="text-gray-700 hover:text-gray-900">요청 목록</NuxtLink>
+              <NuxtLink to="/" class="text-gray-700 hover:text-gray-900">홈으로</NuxtLink>
               <NuxtLink to="/partner/bids" class="text-blue-600 font-medium">내 견적</NuxtLink>
               <NuxtLink to="/partner/chat" class="text-gray-700 hover:text-gray-900">채팅</NuxtLink>
             </div>

@@ -132,7 +132,7 @@ onMounted(async () => {
   
   // 승인된 파트너는 요청 페이지로 이동
   if (user.user?.approvalStatus === 'approved') {
-    navigateTo('/partner/requests')
+    navigateTo('/')
     return
   }
   

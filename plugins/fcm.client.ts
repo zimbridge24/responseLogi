@@ -76,12 +76,26 @@ export default defineNuxtPlugin(async () => {
         
         if (user.currentUser?.uid) {
           const { doc, setDoc } = await import('firebase/firestore')
-          await setDoc(doc($db, 'users', user.currentUser.uid), {
+          const userDocRef = doc($db, 'users', user.currentUser.uid)
+          
+          console.log('🔍 사용자 문서 경로:', userDocRef.path)
+          console.log('🔍 저장할 토큰:', token.substring(0, 50) + '...')
+          
+          await setDoc(userDocRef, {
             fcmToken: token,
             updatedAt: new Date()
           }, { merge: true })
           
           console.log('✅ FCM 토큰이 Firestore에 저장되었습니다.')
+          
+          // 저장 확인을 위해 다시 읽어보기
+          const { getDoc } = await import('firebase/firestore')
+          const savedDoc = await getDoc(userDocRef)
+          const savedData = savedDoc.data()
+          console.log('🔍 저장된 데이터 확인:', {
+            fcmToken: savedData?.fcmToken ? '있음' : '없음',
+            updatedAt: savedData?.updatedAt
+          })
         } else {
           console.log('❌ 사용자 ID가 없어서 토큰을 저장할 수 없습니다.')
         }
@@ -151,13 +165,85 @@ export default defineNuxtPlugin(async () => {
     }
   }
 
+  // FCM 토큰 확인 함수
+  const checkFCMToken = async () => {
+    try {
+      const { $db } = useNuxtApp()
+      const user = useUserStore()
+      
+      if (user.currentUser?.uid) {
+        const { doc, getDoc } = await import('firebase/firestore')
+        const userDocRef = doc($db, 'users', user.currentUser.uid)
+        const userDoc = await getDoc(userDocRef)
+        const userData = userDoc.data()
+        
+        console.log('🔍 현재 사용자 FCM 토큰 상태:', {
+          userId: user.currentUser.uid,
+          fcmToken: userData?.fcmToken ? '있음' : '없음',
+          tokenPreview: userData?.fcmToken ? userData.fcmToken.substring(0, 50) + '...' : '없음'
+        })
+        
+        return userData?.fcmToken
+      } else {
+        console.log('❌ 사용자가 로그인되지 않았습니다.')
+        return null
+      }
+    } catch (error) {
+      console.error('❌ FCM 토큰 확인 실패:', error)
+      return null
+    }
+  }
+
+  // 수동 웹푸시 테스트 함수 (Firebase Functions 없이)
+  const testWebPush = async () => {
+    try {
+      console.log('🧪 웹푸시 테스트 시작...')
+      
+      // 1. FCM 토큰 확인
+      const token = await checkFCMToken()
+      if (!token) {
+        console.log('❌ FCM 토큰이 없습니다. 먼저 토큰을 발급받아주세요.')
+        return
+      }
+      
+      // 2. 브라우저 알림 테스트
+      if ('Notification' in window) {
+        const notification = new Notification('웹푸시 테스트', {
+          body: 'FCM 토큰이 정상적으로 저장되었습니다!',
+          icon: '/icon-192x192.png',
+          badge: '/badge-72x72.png',
+          tag: 'webpush-test',
+          requireInteraction: true
+        })
+        
+        notification.onclick = () => {
+          console.log('웹푸시 테스트 알림 클릭됨')
+          notification.close()
+        }
+        
+        console.log('✅ 브라우저 알림 테스트 완료')
+      } else {
+        console.log('❌ 브라우저가 알림을 지원하지 않습니다.')
+      }
+      
+      // 3. FCM 메시지 수신 테스트 (포그라운드)
+      console.log('🔔 포그라운드 메시지 수신 대기 중...')
+      console.log('💡 팁: 다른 탭에서 이 페이지를 열어두고 테스트해보세요.')
+      
+    } catch (error) {
+      console.error('❌ 웹푸시 테스트 실패:', error)
+    }
+  }
+
   // 전역으로 사용할 수 있도록 제공
   return {
     provide: {
       fcm: {
         getToken: getFCMToken,
         messaging,
-        testNotification
+        testNotification,
+        checkFCMToken,
+        testWebPush
       }
     }
   }

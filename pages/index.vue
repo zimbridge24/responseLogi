@@ -10,12 +10,14 @@
     <!-- Navigation -->
     <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-          <span class="text-white text-xl">📦</span>
-        </div>
-        <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          응답하라 창고
-        </span>
+        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white text-xl">📦</span>
+          </div>
+          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            응답하라 창고
+          </span>
+        </NuxtLink>
       </div>
       <div class="flex items-center space-x-8">
         <!-- 로그인되지 않은 경우 -->
@@ -91,15 +93,22 @@
           >
             신청한 견적
           </NuxtLink>
-          <!-- 파트너인 경우 견적 신청서 버튼 표시 -->
-          <NuxtLink 
-            v-if="user.role === 'partner'"
-            to="/partner/requests" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-          >
-            견적 신청서
-          </NuxtLink>
-          <div class="w-px h-6 bg-gray-300"></div>
+          <!-- 파트너인 경우 네비게이션 -->
+          <template v-if="user.role === 'partner'">
+            <NuxtLink 
+              to="/partner/my-quotes" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            >
+              내가 보낸 견적서
+            </NuxtLink>
+            <div class="w-px h-6 bg-gray-300"></div>
+            <NuxtLink 
+              to="/partner/completed-quotes" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            >
+              확정견적
+            </NuxtLink>
+          </template>
           <!-- 고객인 경우 완료된 견적 버튼 표시 -->
           <NuxtLink 
             v-if="user.role === 'customer'"
@@ -148,63 +157,51 @@
         </p>
         <!-- 로그인되지 않은 경우 -->
         <div v-if="!user.isLoggedIn" class="flex flex-col items-center space-y-6 animate-bounce-in">
-          <!-- 견적 신청하기 버튼 -->
-          <div class="mb-4">
-            <NuxtLink 
-              to="/customer/login" 
-              class="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-            >
-              <span class="relative z-10 flex items-center space-x-3">
-                <span>🚀</span>
-                <span>견적 신청하기</span>
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </NuxtLink>
-          </div>
-          
           <div class="text-center mb-4">
             <p class="text-lg text-gray-600 mb-6">간편한 전화번호 인증으로 시작하세요!</p>
           </div>
           
+          <!-- 큰 로그인 버튼들 -->
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <NuxtLink 
-              to="/customer/register" 
+              to="/customer/login" 
               class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
             >
               <span class="relative z-10 flex items-center space-x-2">
                 <span>👤</span>
-                <span>고객 회원가입</span>
+                <span>고객 로그인</span>
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NuxtLink>
             
             <NuxtLink 
-              to="/partner/register" 
+              to="/login" 
               class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
             >
               <span class="relative z-10 flex items-center space-x-2">
                 <span>🏢</span>
-                <span>파트너 회원가입</span>
+                <span>파트너 로그인</span>
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NuxtLink>
           </div>
           
+          <!-- 작은 회원가입 링크들 -->
           <div class="text-center">
-            <p class="text-sm text-gray-500 mb-2">이미 계정이 있으신가요?</p>
+            <p class="text-sm text-gray-500 mb-2">계정이 없으신가요?</p>
               <div class="flex space-x-4 justify-center">
                 <NuxtLink 
-                  to="/customer/login" 
+                  to="/customer/register" 
                   class="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
                 >
-                  고객 로그인
+                  고객 회원가입
                 </NuxtLink>
                 <span class="text-gray-300">|</span>
                 <NuxtLink 
-                  to="/login" 
+                  to="/partner/register" 
                   class="text-green-600 hover:text-green-800 font-semibold transition-colors"
                 >
-                  파트너 로그인
+                  파트너 회원가입
                 </NuxtLink>
               </div>
           </div>
@@ -276,38 +273,80 @@
         </div>
 
         <!-- 파트너인 경우 -->
-        <div v-else-if="user.isLoggedIn && user.role === 'partner'" class="flex flex-col items-center animate-bounce-in">
-          <div class="text-center mb-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">사용 가능한 견적 신청</h2>
-            <div v-if="availableRequests.length > 0" class="text-2xl font-semibold text-blue-600">
-              {{ availableRequests.length }}건의 견적 신청이 있습니다
-            </div>
-            <div v-else class="text-2xl font-semibold text-gray-500">
-              0건입니다
+        <div v-else-if="user.isLoggedIn && user.role === 'partner'" class="w-full max-w-6xl mx-auto">
+          <div class="flex items-center justify-between mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight animate-slide-up">
+              <span class="bg-gradient-to-r from-green-600 via-teal-600 to-green-800 bg-clip-text text-transparent">
+                사용 가능한 견적 신청서
+              </span>
+            </h1>
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-lg">
+              <span class="text-white font-bold text-lg">
+                총 {{ availableRequests.length }}건
+              </span>
             </div>
           </div>
-          
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <NuxtLink 
-              to="/partner/requests" 
-              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+
+          <!-- 로딩 상태 -->
+          <div v-if="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <p class="mt-4 text-gray-600">견적 신청서를 불러오는 중...</p>
+          </div>
+
+          <!-- 견적 신청서가 없는 경우 -->
+          <div v-else-if="availableRequests.length === 0" class="text-center py-16">
+            <div class="text-6xl mb-4">📋</div>
+            <h3 class="text-2xl font-semibold text-gray-900 mb-2">사용 가능한 견적 신청서가 없습니다</h3>
+            <p class="text-gray-600">새로운 견적 신청서를 기다려주세요!</p>
+          </div>
+
+          <!-- 견적 신청서 카드 목록 -->
+          <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div 
+              v-for="(request, index) in availableRequests" 
+              :key="request.id"
+              @click="viewRequest(request)"
+              class="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
             >
-              <span class="relative z-10 flex items-center space-x-2">
-                <span>📋</span>
-                <span>견적 신청서 보기</span>
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </NuxtLink>
-            <NuxtLink 
-              to="/partner/my-quotes" 
-              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-            >
-              <span class="relative z-10 flex items-center space-x-2">
-                <span>💼</span>
-                <span>내 견적 관리</span>
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </NuxtLink>
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center shadow-md">
+                  <span class="text-white text-sm font-bold">{{ index + 1 }}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    신규
+                  </span>
+                  <button 
+                    @click.stop="deleteRequest(request.id, index)"
+                    class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200"
+                    title="삭제"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="text-center mb-3">
+                <p class="text-xs text-gray-500">{{ formatDate(request.createdAt) }}</p>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-500">팔렛</span>
+                  <span class="font-medium">{{ request.pallets || 0 }}개</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-500">박스</span>
+                  <span class="font-medium">{{ request.boxes || 0 }}개</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-500">보관</span>
+                  <span class="font-medium">{{ request.storagePeriod || 0 }}{{ getPeriodUnit(request.storagePeriodUnit) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -325,7 +364,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { FirestoreService } from '~/lib/services/firestore'
 import { where } from 'firebase/firestore'
 
@@ -340,6 +379,9 @@ const unreadChatCount = ref(0)
 
 // 사용 가능한 견적 신청 목록 (파트너용)
 const availableRequests = ref<any[]>([])
+
+// 로딩 상태
+const loading = ref(false)
 
 // 읽지 않은 메시지 수 계산
 const calculateUnreadChatCount = async () => {
@@ -401,30 +443,124 @@ const calculateUnreadChatCount = async () => {
 // 사용 가능한 견적 신청 목록 로드 (파트너용)
 const loadAvailableRequests = async () => {
   try {
-    if (!user.isLoggedIn || user.role !== 'partner') return
+    console.log('🚀 loadAvailableRequests 시작')
+    console.log('👤 사용자 로그인 상태:', user.isLoggedIn)
+    console.log('👤 사용자 역할:', user.role)
     
+    if (!user.isLoggedIn || user.role !== 'partner') {
+      console.log('❌ 파트너가 아니거나 로그인되지 않음')
+      return
+    }
+    
+    loading.value = true
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
-    // 사용 가능한 견적 신청 목록 가져오기
-    availableRequests.value = await firestoreService.getAvailableWarehouseRequests()
+    console.log('📡 Firestore 서비스 초기화 완료')
+    console.log('👤 전달할 파트너 ID:', user.currentUser?.uid)
+    
+    // 사용 가능한 견적 신청 목록 가져오기 (파트너 ID 전달)
+    const requests = await firestoreService.getAvailableWarehouseRequests(user.currentUser?.uid)
+    console.log('📋 로드된 견적 신청서:', requests.length, '건')
+    console.log('📋 견적 신청서 상세:', requests)
+    
+    availableRequests.value = requests
+    console.log('✅ availableRequests.value 업데이트 완료:', availableRequests.value.length, '건')
   } catch (error) {
-    console.error('사용 가능한 견적 신청 목록 로드 실패:', error)
+    console.error('❌ 사용 가능한 견적 신청 목록 로드 실패:', error)
+  } finally {
+    loading.value = false
+    console.log('🏁 loadAvailableRequests 완료')
   }
 }
 
 // 로그인된 사용자는 적절한 페이지로 리다이렉트
 onMounted(async () => {
+  console.log('🎯 onMounted 시작')
+  console.log('👤 사용자 로그인 상태:', user.isLoggedIn)
+  console.log('👤 사용자 역할:', user.role)
+  
   if (user.isLoggedIn) {
     // 읽지 않은 메시지 수 계산
     await calculateUnreadChatCount()
     
     // 파트너인 경우 사용 가능한 견적 신청 목록 로드
     if (user.role === 'partner') {
+      console.log('🏢 파트너 감지, 견적 신청서 로드 시작')
       await loadAvailableRequests()
     }
   }
+  console.log('🏁 onMounted 완료')
 })
+
+// 사용자 상태 변경 감지
+watch(() => user.isLoggedIn, async (newValue, oldValue) => {
+  console.log('👤 사용자 로그인 상태 변경:', oldValue, '→', newValue)
+  if (newValue && user.role === 'partner') {
+    console.log('🏢 파트너 로그인 감지, 견적 신청서 로드')
+    await loadAvailableRequests()
+  }
+})
+
+watch(() => user.role, async (newValue, oldValue) => {
+  console.log('👤 사용자 역할 변경:', oldValue, '→', newValue)
+  if (newValue === 'partner' && user.isLoggedIn) {
+    console.log('🏢 파트너 역할 감지, 견적 신청서 로드')
+    await loadAvailableRequests()
+  }
+})
+
+// 견적 신청서 상세보기
+const viewRequest = (request: any) => {
+  // 견적 신청서 상세 페이지로 이동
+  navigateTo(`/partner/quote/${request.id}`)
+}
+
+// 견적 신청서 삭제
+const deleteRequest = async (requestId: string, index: number) => {
+  if (!confirm('이 견적 신청서를 삭제하시겠습니까?')) {
+    return
+  }
+  
+  try {
+    const { $db } = useNuxtApp()
+    const firestoreService = new FirestoreService($db)
+    
+    // Firestore에서 삭제
+    await firestoreService.deleteWarehouseRequest(requestId)
+    
+    // 로컬 배열에서 제거
+    availableRequests.value.splice(index, 1)
+    
+    console.log('견적 신청서가 삭제되었습니다:', requestId)
+  } catch (error) {
+    console.error('견적 신청서 삭제 실패:', error)
+    alert('견적 신청서 삭제에 실패했습니다. 다시 시도해주세요.')
+  }
+}
+
+// 날짜 포맷팅
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(date)
+}
+
+// 기간 단위
+const getPeriodUnit = (unit: string) => {
+  switch (unit) {
+    case 'day':
+      return '일'
+    case 'month':
+      return '개월'
+    case 'year':
+      return '년'
+    default:
+      return ''
+  }
+}
 
 // 로그아웃 함수
 const handleLogout = async () => {

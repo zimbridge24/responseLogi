@@ -10,7 +10,7 @@
     <!-- Navigation -->
     <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
       <div class="flex items-center space-x-3">
-        <NuxtLink to="/partner/requests" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <span class="text-white text-xl">📦</span>
           </div>
@@ -45,12 +45,12 @@
         <!-- 견적 신청서 정보 -->
         <div v-else-if="request" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 mb-8">
           <div class="flex justify-between items-start mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">견적 응답하기</h1>
+            <h1 class="text-3xl font-bold text-gray-900">견적서 작성하기</h1>
             <NuxtLink 
-              to="/partner/requests"
+              to="/"
               class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              목록으로 돌아가기
+              홈으로 돌아가기
             </NuxtLink>
           </div>
 
@@ -58,10 +58,8 @@
           <div class="bg-blue-50 rounded-xl p-6 mb-6">
             <h2 class="text-xl font-semibold text-blue-900 mb-4">고객 정보</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><span class="font-medium text-blue-800">회사명:</span> {{ request.customerCompany }}</div>
               <div><span class="font-medium text-blue-800">담당자:</span> {{ request.customerName }}</div>
               <div><span class="font-medium text-blue-800">연락처:</span> {{ request.customerPhone }}</div>
-              <div><span class="font-medium text-blue-800">이메일:</span> {{ request.customerEmail }}</div>
             </div>
           </div>
 
@@ -289,7 +287,7 @@
             <!-- 제출 버튼 -->
             <div class="flex justify-end space-x-4">
               <NuxtLink 
-                to="/partner/requests"
+                to="/"
                 class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
               >
                 취소
@@ -318,7 +316,7 @@
           <h2 class="text-2xl font-bold text-gray-900 mb-2">견적 마감</h2>
           <p class="text-gray-600 mb-6">이 견적은 이미 7개의 견적을 받아 마감되었습니다.</p>
           <NuxtLink 
-            to="/partner/requests"
+            to="/"
             class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
           >
             목록으로 돌아가기
@@ -331,7 +329,7 @@
           <h2 class="text-2xl font-bold text-gray-900 mb-2">견적을 찾을 수 없습니다</h2>
           <p class="text-gray-600 mb-6">요청하신 견적이 존재하지 않거나 접근 권한이 없습니다.</p>
           <NuxtLink 
-            to="/partner/requests"
+            to="/"
             class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
           >
             목록으로 돌아가기
@@ -344,6 +342,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { where } from 'firebase/firestore'
 import { FirestoreService } from '~/lib/services/firestore'
 import type { WarehouseRequest, WarehouseQuote } from '~/lib/types'
 
@@ -403,7 +402,28 @@ const loadRequest = async () => {
     const { $db } = useNuxtApp()
     const firestoreService = new FirestoreService($db)
     
-    request.value = await firestoreService.getWarehouseRequest(requestId)
+    // 견적 신청서 정보 가져오기
+    const requestData = await firestoreService.getWarehouseRequest(requestId)
+    if (!requestData) {
+      console.error('견적 신청서를 찾을 수 없습니다:', requestId)
+      return
+    }
+    
+    // 이미 이 파트너가 이 견적 신청에 대해 견적을 작성했는지 확인
+    const existingQuotes = await firestoreService.getWarehouseQuotes([
+      where('requestId', '==', requestId),
+      where('partnerId', '==', user.currentUser?.uid)
+    ])
+    
+    if (existingQuotes.length > 0) {
+      console.log('이미 견적을 작성한 신청서입니다:', existingQuotes)
+      // 이미 견적을 작성했다면 메인 페이지로 리다이렉트
+      await navigateTo('/')
+      return
+    }
+    
+    request.value = requestData
+    console.log('견적 신청서 로드 완료:', requestData)
   } catch (error) {
     console.error('견적 신청서 로드 실패:', error)
     errorMessage.value = '견적 신청서를 불러오는데 실패했습니다.'
@@ -452,9 +472,12 @@ const submitQuote = async () => {
       await firestoreService.incrementQuoteCount(requestId)
     }
 
-    // 성공 메시지 표시 후 목록으로 이동
-    if (confirm('견적이 성공적으로 제출되었습니다! 목록으로 이동하시겠습니까?')) {
-      await navigateTo('/partner/requests')
+    // 견적 제출 성공 후 자동으로 홈으로 이동
+    console.log('견적이 성공적으로 제출되었습니다!')
+    await navigateTo('/')
+    // 페이지 새로고침하여 최신 데이터 로드
+    if (process.client) {
+      window.location.reload()
     }
   } catch (error) {
     console.error('견적 응답 제출 실패:', error)

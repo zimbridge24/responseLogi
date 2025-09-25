@@ -30,7 +30,7 @@
         </NuxtLink>
         <div class="w-px h-6 bg-gray-300"></div>
         <NuxtLink 
-          to="/partner/requests" 
+          to="/" 
           class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
         >
           견적 신청서
@@ -73,7 +73,7 @@
           <h3 class="text-xl font-semibold text-gray-900 mb-2">아직 제출한 견적서가 없습니다</h3>
           <p class="text-gray-600 mb-8">견적 신청서에 응답하여 견적서를 제출해보세요</p>
           <NuxtLink 
-            to="/partner/requests"
+            to="/"
             class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             견적 신청서 보기
@@ -136,10 +136,10 @@
                 상세보기
               </button>
               <button 
-                @click="startChat(quote)"
-                class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                @click="cancelQuote(quote)"
+                class="flex-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
               >
-                채팅하기
+                취소하기
               </button>
             </div>
           </div>
@@ -223,10 +223,10 @@
               닫기
             </button>
             <button 
-              @click="startChat(selectedQuote)"
-              class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              @click="cancelQuote(selectedQuote)"
+              class="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
             >
-              채팅하기
+              취소하기
             </button>
           </div>
         </div>
@@ -309,10 +309,33 @@ const viewQuote = (quote: WarehouseQuote) => {
   selectedQuote.value = quote
 }
 
-// 채팅 시작
-const startChat = (quote: WarehouseQuote) => {
-  const chatId = `${quote.requestId}_${quote.customerId}_${quote.partnerId}`
-  navigateTo(`/chat/${chatId}`)
+// 견적서 취소
+const cancelQuote = async (quote: WarehouseQuote) => {
+  if (!confirm('이 견적서를 취소하시겠습니까? 취소된 견적서는 복구할 수 없습니다.')) {
+    return
+  }
+  
+  try {
+    const { FirestoreService } = await import('~/lib/services/firestore')
+    const firestoreService = new FirestoreService($db)
+    
+    // 견적서 삭제
+    await firestoreService.deleteWarehouseQuote(quote.id)
+    
+    // 견적 신청서의 currentQuoteCount 감소
+    await firestoreService.decrementQuoteCount(quote.requestId)
+    
+    // 로컬 목록에서 제거
+    quotes.value = quotes.value.filter(q => q.id !== quote.id)
+    
+    // 모달 닫기
+    selectedQuote.value = null
+    
+    console.log('견적서가 취소되었습니다:', quote.id)
+  } catch (error) {
+    console.error('견적서 취소 실패:', error)
+    alert('견적서 취소에 실패했습니다. 다시 시도해주세요.')
+  }
 }
 
 // 가격 포맷팅

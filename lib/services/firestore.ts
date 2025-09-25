@@ -212,10 +212,13 @@ export class FirestoreService {
 
   async getBidsByPartner(partnerId: string): Promise<Bid[]> {
     try {
-      return await this.getBids([
-        where('partnerId', '==', partnerId),
-        orderBy('createdAt', 'desc')
+      // 임시로 복합 쿼리를 단순화하여 인덱스 없이 실행
+      const allBids = await this.getBids([
+        where('partnerId', '==', partnerId)
       ])
+      
+      // 클라이언트에서 정렬
+      return allBids.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     } catch (error) {
       console.error('Error getting bids by partner:', error)
       throw error
@@ -362,12 +365,27 @@ export class FirestoreService {
         updatedAt: now
       }
       console.log('FirestoreService: 저장할 데이터:', dataToSave)
+      console.log('FirestoreService: 데이터베이스 인스턴스:', !!this.db)
+      console.log('FirestoreService: 컬렉션 경로: warehouseRequests')
       
       const docRef = await addDoc(collection(this.db, 'warehouseRequests'), dataToSave)
       console.log('FirestoreService: 견적 신청 저장 완료, 문서 ID:', docRef.id)
+      
+      // 저장 확인을 위해 즉시 읽어보기
+      const savedDoc = await getDoc(docRef)
+      console.log('FirestoreService: 저장 확인 - 문서 존재:', savedDoc.exists())
+      if (savedDoc.exists()) {
+        console.log('FirestoreService: 저장된 데이터:', savedDoc.data())
+      }
+      
       return docRef.id
     } catch (error) {
       console.error('Error creating warehouse request:', error)
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      })
       throw error
     }
   }
@@ -415,16 +433,50 @@ export class FirestoreService {
     }
   }
 
-  async getAvailableWarehouseRequests(): Promise<WarehouseRequest[]> {
+  async getAvailableWarehouseRequests(partnerId?: string): Promise<WarehouseRequest[]> {
     try {
-      // 임시로 복합 쿼리를 단순화하여 인덱스 없이 실행
-      const allRequests = await this.getWarehouseRequests([
-        where('status', '==', 'pending')
-      ])
+      console.log('🔍 getAvailableWarehouseRequests 시작, 파트너 ID:', partnerId)
       
-      // 클라이언트에서 필터링 및 정렬
-      const availableRequests = allRequests
-        .filter(request => request.currentQuoteCount < 7)
+      // 임시로 복합 쿼리를 단순화하여 인덱스 없이 실행
+      // 디버깅을 위해 모든 상태의 요청을 가져옴
+      const allRequests = await this.getWarehouseRequests([])
+      console.log('📋 모든 요청 (상태 무관):', allRequests.length, '건')
+      console.log('📋 모든 요청 상세:', allRequests)
+      
+      // pending 상태만 필터링
+      const pendingRequests = allRequests.filter(request => request.status === 'pending')
+      console.log('📋 pending 상태 요청:', pendingRequests.length, '건')
+      
+      // 파트너가 이미 견적을 작성한 신청서 ID 목록 가져오기
+      let myQuoteRequestIds: string[] = []
+      if (partnerId) {
+        try {
+          console.log('🔍 파트너 ID로 견적 조회 시작:', partnerId)
+          const myQuotes = await this.getWarehouseQuotes([
+            where('partnerId', '==', partnerId)
+          ])
+          console.log('📝 조회된 내 견적들:', myQuotes.length, '건')
+          console.log('📝 내 견적 상세:', myQuotes)
+          
+          myQuoteRequestIds = myQuotes.map(quote => quote.requestId)
+          console.log('📝 내가 작성한 견적의 요청 ID들:', myQuoteRequestIds)
+        } catch (error) {
+          console.error('❌ 내가 작성한 견적 조회 실패:', error)
+        }
+      } else {
+        console.log('⚠️ 파트너 ID가 없어서 견적 필터링을 건너뜁니다')
+      }
+      
+      // 클라이언트에서 필터링 및 정렬 (pending 요청만 사용)
+      const availableRequests = pendingRequests
+        .filter(request => {
+          const isAvailable = request.currentQuoteCount < 7
+          const notMyQuote = !myQuoteRequestIds.includes(request.id)
+          const finalAvailable = isAvailable && notMyQuote
+          
+          console.log(`📊 요청 ${request.id}: currentQuoteCount=${request.currentQuoteCount}, available=${isAvailable}, notMyQuote=${notMyQuote}, final=${finalAvailable}`)
+          return finalAvailable
+        })
         .sort((a, b) => {
           // 먼저 currentQuoteCount로 정렬, 같으면 createdAt으로 정렬
           if (a.currentQuoteCount !== b.currentQuoteCount) {
@@ -433,6 +485,7 @@ export class FirestoreService {
           return b.createdAt.getTime() - a.createdAt.getTime()
         })
       
+      console.log('✅ 사용 가능한 요청:', availableRequests.length, '건')
       return availableRequests
     } catch (error) {
       console.error('Error getting available warehouse requests:', error)
@@ -449,6 +502,16 @@ export class FirestoreService {
       })
     } catch (error) {
       console.error('Error updating warehouse request:', error)
+      throw error
+    }
+  }
+
+  async deleteWarehouseRequest(requestId: string): Promise<void> {
+    try {
+      const requestRef = doc(this.db, 'warehouseRequests', requestId)
+      await deleteDoc(requestRef)
+    } catch (error) {
+      console.error('Error deleting warehouse request:', error)
       throw error
     }
   }
@@ -559,6 +622,32 @@ export class FirestoreService {
       }
     } catch (error) {
       console.error('Error incrementing quote count:', error)
+      throw error
+    }
+  }
+
+  // 견적 취소 시 현재 견적 수 감소
+  async decrementQuoteCount(requestId: string): Promise<void> {
+    try {
+      const request = await this.getWarehouseRequest(requestId)
+      if (request && request.currentQuoteCount > 0) {
+        await this.updateWarehouseRequest(requestId, {
+          currentQuoteCount: request.currentQuoteCount - 1
+        })
+      }
+    } catch (error) {
+      console.error('Error decrementing quote count:', error)
+      throw error
+    }
+  }
+
+  // 견적서 삭제
+  async deleteWarehouseQuote(quoteId: string): Promise<void> {
+    try {
+      const quoteRef = doc(this.db, 'warehouseQuotes', quoteId)
+      await deleteDoc(quoteRef)
+    } catch (error) {
+      console.error('Error deleting warehouse quote:', error)
       throw error
     }
   }

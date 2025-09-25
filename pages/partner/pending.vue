@@ -129,7 +129,7 @@ onMounted(async () => {
   
   // 이미 승인된 파트너는 요청 페이지로 이동
   if (user.user?.approvalStatus === 'approved') {
-    navigateTo('/partner/requests')
+    navigateTo('/')
     return
   }
 })
@@ -143,7 +143,7 @@ const checkApprovalStatus = async () => {
     
     if (user.user?.approvalStatus === 'approved') {
       // 승인 완료 시 요청 페이지로 이동
-      navigateTo('/partner/requests')
+      navigateTo('/')
     } else if (user.user?.approvalStatus === 'rejected') {
       // 거절된 경우 거절 페이지로 이동
       navigateTo('/partner/rejected')

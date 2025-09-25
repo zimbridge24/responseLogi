@@ -1,16 +1,136 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
+      <div class="flex items-center space-x-3">
+        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white text-xl">📦</span>
+          </div>
+          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            응답하라 창고
+          </span>
+        </NuxtLink>
+      </div>
+      <div class="flex items-center space-x-8">
+        <!-- 로그인되지 않은 경우 -->
+        <template v-if="!user.isLoggedIn">
+          <div class="flex items-center space-x-4">
+            <div class="relative group">
+              <button class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200">
+                로그인
+              </button>
+              <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <NuxtLink 
+                  to="/customer/login" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
+                >
+                  고객 로그인
+                </NuxtLink>
+                <NuxtLink 
+                  to="/login" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
+                >
+                  파트너 로그인
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+          <div class="w-px h-6 bg-gray-300"></div>
+          <div class="flex items-center space-x-4">
+            <div class="relative group">
+              <button class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200">
+                회원가입
+              </button>
+              <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <NuxtLink 
+                  to="/customer/register" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
+                >
+                  고객 회원가입
+                </NuxtLink>
+                <NuxtLink 
+                  to="/partner/register" 
+                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
+                >
+                  파트너 회원가입
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+        </template>
+        
+        <!-- 로그인된 경우 -->
+        <template v-else>
+          <div class="text-gray-800 font-semibold text-lg">
+            {{ user.role === 'customer' ? '고객' : user.role === 'partner' ? '파트너' : '사용자' }}님
+          </div>
+          <div class="w-px h-6 bg-gray-300"></div>
+          
+          <!-- 역할이 없는 경우 (회원가입 미완료) -->
+          <template v-if="!user.role">
+            <NuxtLink 
+              to="/partner/register" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            >
+              회원가입 완료하기
+            </NuxtLink>
+            <div class="w-px h-6 bg-gray-300"></div>
+          </template>
+          
+          <!-- 고객인 경우 신청한 견적 버튼 표시 -->
+          <NuxtLink 
+            v-if="user.role === 'customer'"
+            to="/customer/requests" 
+            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+          >
+            신청한 견적
+          </NuxtLink>
+          <!-- 파트너인 경우 네비게이션 -->
+          <template v-if="user.role === 'partner'">
+            <div class="text-gray-800 font-semibold text-lg">
+              {{ user.user?.name || '사용자' }}님 (파트너)
+            </div>
+            <div class="w-px h-6 bg-gray-300"></div>
+            <NuxtLink 
+              to="/partner/my-quotes" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            >
+              내가 보낸 견적서
+            </NuxtLink>
+            <div class="w-px h-6 bg-gray-300"></div>
+            <NuxtLink 
+              to="/partner/completed-quotes" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            >
+              확정견적
+            </NuxtLink>
+          </template>
+          
+          <div class="w-px h-6 bg-gray-300"></div>
+          <NuxtLink 
+            to="/chat-list" 
+            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+          >
+            채팅
+          </NuxtLink>
+          <div class="w-px h-6 bg-gray-300"></div>
+          <button 
+            @click="handleLogout"
+            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+          >
+            로그아웃
+          </button>
+        </template>
+      </div>
+    </nav>
+
     <!-- Header -->
     <div class="bg-white shadow-sm border-b">
       <div class="max-w-4xl mx-auto px-4 py-4">
-        <!-- 상단 네비게이션 -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-4">
-            <NuxtLink to="/chat-list" class="text-gray-500 hover:text-gray-700">← 뒤로가기</NuxtLink>
-            <NuxtLink to="/" class="text-gray-500 hover:text-gray-700">🏠 홈</NuxtLink>
-          </div>
+        <!-- 채팅방 제목 -->
+        <div class="flex items-center justify-center mb-4">
           <h1 class="text-xl font-semibold text-gray-900">채팅방</h1>
-          <div class="w-8"></div> <!-- 균형을 위한 빈 공간 -->
         </div>
         
         <!-- 업체 정보 및 견적 요약 -->
@@ -36,16 +156,6 @@
               </div>
             </div>
             
-            <!-- 전화걸기 버튼 (모바일용) -->
-            <div class="ml-4">
-              <a 
-                :href="`tel:${chatInfo.partnerPhone}`"
-                class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-              >
-                <span class="mr-2">📞</span>
-                전화걸기
-              </a>
-            </div>
           </div>
         </div>
       </div>
@@ -150,7 +260,6 @@ const loadChatInfo = async (requestId: string, partnerId: string) => {
     chatInfo.value = {
       partnerCompany: partner?.companyName || '알 수 없음',
       partnerName: partner?.name || '알 수 없음',
-      partnerPhone: partner?.phone || '',
       quote: quote || null
     }
   } catch (error) {
@@ -161,6 +270,16 @@ const loadChatInfo = async (requestId: string, partnerId: string) => {
 // 가격 포맷팅
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('ko-KR').format(price)
+}
+
+// 로그아웃 처리
+const handleLogout = async () => {
+  try {
+    await user.logout()
+    await navigateTo('/')
+  } catch (error) {
+    console.error('로그아웃 실패:', error)
+  }
 }
 
 // 마지막 읽은 시간 업데이트

@@ -51,6 +51,12 @@ export const useUserStore = defineStore('user', () => {
     const authInstance = getAuthInstance()
     if (!authInstance) {
       console.error('Firebase auth not initialized')
+      // Retry after a short delay
+      setTimeout(() => {
+        if (!authInitialized.value) {
+          initializeAuth()
+        }
+      }, 1000)
       return
     }
     
@@ -219,7 +225,7 @@ export const useUserStore = defineStore('user', () => {
       if (role.value === 'partner') {
         // 파트너는 승인 상태에 따라 적절한 페이지로 리다이렉트
         if (userProfile.value?.approvalStatus === 'approved') {
-          redirectUrl = '/partner/requests'
+          redirectUrl = '/' // 파트너 메인 페이지 (견적 신청서 목록)
         } else if (userProfile.value?.approvalStatus === 'rejected') {
           redirectUrl = '/partner/rejected'
         } else {

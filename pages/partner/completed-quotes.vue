@@ -30,7 +30,7 @@
         </NuxtLink>
         <div class="w-px h-6 bg-gray-300"></div>
         <NuxtLink 
-          to="/partner/requests" 
+          to="/" 
           class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
         >
           견적 신청서
@@ -83,7 +83,7 @@
           <h3 class="text-xl font-semibold text-gray-900 mb-2">아직 확정된 견적이 없습니다</h3>
           <p class="text-gray-600 mb-8">고객이 견적을 수락하면 여기에 표시됩니다</p>
           <NuxtLink 
-            to="/partner/requests"
+            to="/"
             class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             견적 신청서 보기
@@ -301,6 +301,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { where } from 'firebase/firestore'
 import { FirestoreService } from '~/lib/services/firestore'
 
 // 로그인 체크
