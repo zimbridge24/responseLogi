@@ -197,26 +197,6 @@
           </div>
         </div>
 
-        <!-- 로그인되었지만 역할이 없는 경우 (회원가입 미완료) -->
-        <div v-else-if="user.isLoggedIn && !user.role" class="flex flex-col items-center space-y-6 animate-bounce-in">
-          <div class="text-center mb-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">회원가입을 완료해주세요</h2>
-            <p class="text-lg text-gray-600 mb-6">전화번호 인증은 완료되었지만, 회원가입이 완료되지 않았습니다.</p>
-          </div>
-          
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <NuxtLink 
-              to="/partner/register" 
-              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-            >
-              <span class="relative z-10 flex items-center space-x-2">
-                <span>🏢</span>
-                <span>파트너 회원가입 완료</span>
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </NuxtLink>
-          </div>
-        </div>
 
         <!-- 로그인된 고객인 경우 -->
         <div v-else-if="user.isLoggedIn && user.role === 'customer'" class="flex flex-col items-center space-y-6 animate-bounce-in">

@@ -99,6 +99,16 @@
               {{ loading ? '로그인 중...' : '로그인하기' }}
             </button>
           </div>
+
+          <!-- 회원가입 옵션 -->
+          <div v-if="showRegisterOption" class="text-center">
+            <NuxtLink 
+              to="/customer/register" 
+              class="inline-block px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"
+            >
+              고객 회원가입하기
+            </NuxtLink>
+          </div>
         </form>
       </div>
     </div>
@@ -123,6 +133,7 @@ const error = ref('')
 const verificationSent = ref(false)
 const confirmationResult = ref<any>(null)
 const recaptchaVerifier = ref<any>(null)
+const showRegisterOption = ref(false)
 
 // 전화번호 형식 검증 (숫자만)
 const validatePhoneNumber = (phone: string) => {
@@ -190,6 +201,7 @@ const sendVerificationCode = async () => {
 
   loading.value = true
   error.value = ''
+  showRegisterOption.value = false
 
   try {
     const { $auth } = useNuxtApp()
@@ -236,14 +248,39 @@ const verifyCode = async () => {
   error.value = ''
 
   try {
-    const { $auth } = useNuxtApp()
+    const { $auth, $db } = useNuxtApp()
+    const { doc, getDoc } = await import('firebase/firestore')
+    
     const credential = PhoneAuthProvider.credential(confirmationResult.value.verificationId, formData.value.verificationCode)
     const result = await signInWithCredential($auth, credential)
     
-    console.log('로그인 성공:', result.user.uid)
+    console.log('인증 성공:', result.user.uid)
     
-    // 고객 요청 페이지로 리다이렉트
-    await navigateTo('/customer/requests')
+    // Firestore에서 사용자 정보 확인
+    const userDoc = await getDoc(doc($db, 'users', result.user.uid))
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data()
+      
+      // 고객 역할인지 확인
+      if (userData.role !== 'customer') {
+        await $auth.signOut()
+        error.value = '고객 계정이 아닙니다. 올바른 계정으로 로그인해주세요.'
+        return
+      }
+
+      console.log('고객 로그인 성공')
+      
+      // 고객 요청 페이지로 리다이렉트
+      await navigateTo('/customer/requests')
+    } else {
+      // 회원가입이 안된 경우
+      await $auth.signOut()
+      error.value = '회원가입을 먼저 진행해주세요. 회원가입하기로 가시겠습니까?'
+      
+      // 회원가입 페이지로 이동하는 버튼 표시를 위한 플래그
+      showRegisterOption.value = true
+    }
     
   } catch (err: any) {
     console.error('로그인 실패:', err)

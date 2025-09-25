@@ -1,4 +1,8 @@
 export default defineNuxtConfig({
+  ssr: false, // SPA 모드로 설정
+  nitro: {
+    preset: 'static'
+  },
   modules: [
     '@pinia/nuxt',
     '@vee-validate/nuxt',
