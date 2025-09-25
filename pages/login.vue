@@ -245,24 +245,21 @@ const verifyCode = async () => {
         return
       }
 
-      // 승인 상태 확인
-      if (userData.approvalStatus === 'pending') {
-        await $auth.signOut()
-        error.value = '승인 대기 중인 계정입니다. 승인 후 로그인해주세요.'
-        return
-      }
-
-      if (userData.approvalStatus === 'rejected') {
-        await $auth.signOut()
-        error.value = '승인이 거절된 계정입니다. 관리자에게 문의해주세요.'
-        return
-      }
-
       // 사용자 정보를 스토어에 저장
       await userStore.setUser(result.user, userData)
       
       console.log('파트너 로그인 성공')
-      router.push('/partner')
+      
+      // 승인 상태에 따른 리다이렉트
+      if (userData.approvalStatus === 'pending') {
+        router.push('/partner/pending')
+      } else if (userData.approvalStatus === 'rejected') {
+        router.push('/partner/rejected')
+      } else if (userData.approvalStatus === 'approved') {
+        router.push('/partner')
+      } else {
+        router.push('/partner')
+      }
     } else {
       await $auth.signOut()
       error.value = '등록되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.'

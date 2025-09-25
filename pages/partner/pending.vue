@@ -127,9 +127,15 @@ onMounted(async () => {
     return
   }
   
-  // 이미 승인된 파트너는 요청 페이지로 이동
+  // 이미 승인된 파트너는 파트너 홈으로 이동
   if (user.user?.approvalStatus === 'approved') {
-    navigateTo('/')
+    navigateTo('/partner')
+    return
+  }
+  
+  // 거절된 파트너는 거절 페이지로 이동
+  if (user.user?.approvalStatus === 'rejected') {
+    navigateTo('/partner/rejected')
     return
   }
 })
@@ -142,8 +148,8 @@ const checkApprovalStatus = async () => {
     await user.loadUserProfile()
     
     if (user.user?.approvalStatus === 'approved') {
-      // 승인 완료 시 요청 페이지로 이동
-      navigateTo('/')
+      // 승인 완료 시 파트너 홈으로 이동
+      navigateTo('/partner')
     } else if (user.user?.approvalStatus === 'rejected') {
       // 거절된 경우 거절 페이지로 이동
       navigateTo('/partner/rejected')

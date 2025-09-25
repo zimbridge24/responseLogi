@@ -7,7 +7,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
   const user = useUserStore()
   
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/', '/test-firebase-simple', '/test-simple', '/debug']
+  const publicRoutes = ['/login', '/register', '/', '/test-firebase-simple', '/test-simple', '/debug', '/admin/login']
   
   // Initialize auth listener if not already done
   user.initializeAuth()
@@ -17,11 +17,11 @@ export default defineNuxtRouteMiddleware((to, from) => {
     return
   }
   
-  // Wait for auth to be ready before checking authentication
-  if (!user.authReady) {
+  // Wait for auth to be ready before checking authentication (관리자는 예외)
+  if (!user.authReady && !user.isAdmin) {
     // If auth is not ready yet, wait a bit and then check
     setTimeout(() => {
-      if (!user.isAuthenticated) {
+      if (!user.isAuthenticated && !user.isAdmin) {
         console.log('User not authenticated, redirecting to login')
         navigateTo('/login')
       }
@@ -29,17 +29,17 @@ export default defineNuxtRouteMiddleware((to, from) => {
     return
   }
   
-  // Check if user is authenticated
-  if (!user.isAuthenticated) {
+  // Check if user is authenticated (관리자는 예외)
+  if (!user.isAuthenticated && !user.isAdmin) {
     console.log('User not authenticated, redirecting to login')
     navigateTo('/login')
     return
   }
   
   // Check role-based access
-  if (to.path.startsWith('/admin') && !user.isAdmin) {
-    console.log('Admin access denied, redirecting to home')
-    navigateTo('/')
+  if (to.path.startsWith('/admin') && to.path !== '/admin/login' && !user.isAdmin) {
+    console.log('Admin access denied, redirecting to admin login')
+    navigateTo('/admin/login')
     return
   }
   

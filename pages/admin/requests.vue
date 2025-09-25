@@ -5,7 +5,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center space-x-8">
-            <h1 class="text-xl font-bold text-gray-900">견적 플랫폼</h1>
+            <NuxtLink to="/admin" class="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">응답하라 창고</NuxtLink>
             <div class="flex space-x-4">
               <NuxtLink to="/admin/requests" class="text-blue-600 font-medium">요청 관리</NuxtLink>
               <NuxtLink to="/admin/bids" class="text-gray-700 hover:text-gray-900">견적 관리</NuxtLink>
@@ -160,41 +160,80 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { FirestoreService } from '~/lib/services/firestore'
+
 definePageMeta({
   middleware: 'role-admin'
 })
 
 const { userProfile, logout } = useUserStore()
-const { requests, loading, fetchAllRequests, updateRequest, deleteRequest } = useRequestsStore()
+const { $db } = useNuxtApp()
 
+const requests = ref<any[]>([])
+const loading = ref(true)
 const selectedStatus = ref('')
 const selectedRequest = ref(null)
 
 const columns = [
-  { key: 'title', label: '제목' },
-  { key: 'customerId', label: '고객 ID' },
-  { key: 'category', label: '카테고리' },
-  { key: 'budget', label: '예산', format: 'currency' },
+  { key: 'customerName', label: '고객명' },
+  { key: 'pallets', label: '팔렛 수' },
+  { key: 'boxes', label: '박스 수' },
+  { key: 'storagePeriod', label: '보관 기간' },
   { key: 'status', label: '상태' },
   { key: 'createdAt', label: '생성일', format: 'date' },
 ]
 
 const filteredRequests = computed(() => {
-  if (!selectedStatus.value) return requests
-  return requests.filter(req => req.status === selectedStatus.value)
+  if (!selectedStatus.value) return requests.value
+  return requests.value.filter(req => req.status === selectedStatus.value)
 })
 
 const stats = computed(() => {
   return {
-    pending: requests.filter(req => req.status === 'pending').length,
-    inProgress: requests.filter(req => req.status === 'in_progress').length,
-    completed: requests.filter(req => req.status === 'completed').length,
-    cancelled: requests.filter(req => req.status === 'cancelled').length,
+    pending: requests.value.filter(req => req.status === 'pending').length,
+    inProgress: requests.value.filter(req => req.status === 'in_progress').length,
+    completed: requests.value.filter(req => req.status === 'completed').length,
+    cancelled: requests.value.filter(req => req.status === 'cancelled').length,
   }
 })
 
+// 데이터 로드
+const loadRequests = async () => {
+  loading.value = true
+  try {
+    const firestoreService = new FirestoreService($db)
+    const allRequests = await firestoreService.getWarehouseRequests([])
+    
+    // 고객 정보 추가
+    const requestsWithCustomerInfo = []
+    for (const request of allRequests) {
+      try {
+        const customer = await firestoreService.getUser(request.customerId)
+        requestsWithCustomerInfo.push({
+          ...request,
+          customerName: customer?.name || '알 수 없음'
+        })
+      } catch (error) {
+        console.error('고객 정보 로드 실패:', error)
+        requestsWithCustomerInfo.push({
+          ...request,
+          customerName: '알 수 없음'
+        })
+      }
+    }
+    
+    requests.value = requestsWithCustomerInfo
+    console.log('요청 데이터 로드 완료:', requests.value.length)
+  } catch (error) {
+    console.error('요청 데이터 로드 실패:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
-  await fetchAllRequests()
+  await loadRequests()
 })
 
 const viewRequest = (request: any) => {

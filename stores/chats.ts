@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { FirestoreService } from '~/lib/services/firestore'
+import { where } from 'firebase/firestore'
 import type { Chat, ChatMessage } from '~/lib/types'
 
 export const useChatsStore = defineStore('chats', () => {
@@ -24,6 +25,11 @@ export const useChatsStore = defineStore('chats', () => {
   // Computed properties
   const unreadChats = computed(() => 
     chats.value.filter(chat => chat.lastMessageAt && !chat.lastMessage?.includes('You:'))
+  )
+
+  // 전체 읽지 않은 메시지 수 계산
+  const totalUnreadCount = computed(() => 
+    chats.value.reduce((total, chat) => total + (chat.unreadCount || 0), 0)
   )
 
   // Actions
@@ -123,6 +129,80 @@ export const useChatsStore = defineStore('chats', () => {
     messages.value = []
   }
 
+  // 채팅 목록 가져오기
+  async function fetchChats(userId: string, userRole: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const service = getFirestoreService()
+      let userChats
+      
+      if (userRole === 'customer') {
+        userChats = await service.getChats([
+          where('customerId', '==', userId)
+        ])
+      } else if (userRole === 'partner') {
+        userChats = await service.getChats([
+          where('partnerId', '==', userId)
+        ])
+      } else {
+        userChats = []
+      }
+      
+      // 메시지가 있는 채팅만 필터링하고 상대방 정보 추가
+      const chatsWithMessages = []
+      for (const chat of userChats) {
+        try {
+          const messages = await service.getChatMessages(chat.id)
+          if (messages.length > 0) {
+            // 상대방 정보 추가
+            const otherUserId = userRole === 'customer' ? chat.partnerId : chat.customerId
+            const otherUser = await service.getUser(otherUserId)
+            chat.otherUserName = otherUser?.name || '알 수 없음'
+            
+            // 마지막 메시지 정보 추가
+            const lastMessage = messages[messages.length - 1]
+            chat.lastMessage = lastMessage.text
+            chat.lastMessageAt = lastMessage.createdAt
+            
+            // 읽지 않은 메시지 수 계산
+            const lastReadAt = chat[`lastReadAt_${userId}`]
+            let lastReadAtDate = null
+            if (lastReadAt) {
+              if (lastReadAt.toDate && typeof lastReadAt.toDate === 'function') {
+                lastReadAtDate = lastReadAt.toDate()
+              } else if (lastReadAt instanceof Date) {
+                lastReadAtDate = lastReadAt
+              } else {
+                lastReadAtDate = new Date(lastReadAt)
+              }
+            }
+            
+            const unreadMessages = messages.filter(msg => {
+              if (msg.senderId === userId) return false
+              if (!lastReadAtDate) return true
+              
+              const messageTime = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date(msg.createdAt)
+              return messageTime > lastReadAtDate
+            })
+            
+            chat.unreadCount = unreadMessages.length
+            chatsWithMessages.push(chat)
+          }
+        } catch (error) {
+          console.error('채팅 메시지 확인 실패:', error)
+        }
+      }
+      
+      chats.value = chatsWithMessages
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch chats'
+      console.error('Error fetching chats:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     chats,
@@ -133,6 +213,7 @@ export const useChatsStore = defineStore('chats', () => {
     
     // Computed
     unreadChats,
+    totalUnreadCount,
     
     // Actions
     fetchChatByRequest,
@@ -140,6 +221,7 @@ export const useChatsStore = defineStore('chats', () => {
     createChat,
     sendMessage,
     getOrCreateChat,
+    fetchChats,
     clearError,
     clearCurrentChat,
   }

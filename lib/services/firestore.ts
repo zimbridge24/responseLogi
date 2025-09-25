@@ -435,36 +435,23 @@ export class FirestoreService {
 
   async getAvailableWarehouseRequests(partnerId?: string): Promise<WarehouseRequest[]> {
     try {
-      console.log('🔍 getAvailableWarehouseRequests 시작, 파트너 ID:', partnerId)
-      
-      // 임시로 복합 쿼리를 단순화하여 인덱스 없이 실행
-      // 디버깅을 위해 모든 상태의 요청을 가져옴
+      // 모든 상태의 요청을 가져옴
       const allRequests = await this.getWarehouseRequests([])
-      console.log('📋 모든 요청 (상태 무관):', allRequests.length, '건')
-      console.log('📋 모든 요청 상세:', allRequests)
       
       // pending 상태만 필터링
       const pendingRequests = allRequests.filter(request => request.status === 'pending')
-      console.log('📋 pending 상태 요청:', pendingRequests.length, '건')
       
       // 파트너가 이미 견적을 작성한 신청서 ID 목록 가져오기
       let myQuoteRequestIds: string[] = []
       if (partnerId) {
         try {
-          console.log('🔍 파트너 ID로 견적 조회 시작:', partnerId)
           const myQuotes = await this.getWarehouseQuotes([
             where('partnerId', '==', partnerId)
           ])
-          console.log('📝 조회된 내 견적들:', myQuotes.length, '건')
-          console.log('📝 내 견적 상세:', myQuotes)
-          
           myQuoteRequestIds = myQuotes.map(quote => quote.requestId)
-          console.log('📝 내가 작성한 견적의 요청 ID들:', myQuoteRequestIds)
         } catch (error) {
-          console.error('❌ 내가 작성한 견적 조회 실패:', error)
+          console.error('내가 작성한 견적 조회 실패:', error)
         }
-      } else {
-        console.log('⚠️ 파트너 ID가 없어서 견적 필터링을 건너뜁니다')
       }
       
       // 클라이언트에서 필터링 및 정렬 (pending 요청만 사용)
@@ -472,10 +459,7 @@ export class FirestoreService {
         .filter(request => {
           const isAvailable = request.currentQuoteCount < 7
           const notMyQuote = !myQuoteRequestIds.includes(request.id)
-          const finalAvailable = isAvailable && notMyQuote
-          
-          console.log(`📊 요청 ${request.id}: currentQuoteCount=${request.currentQuoteCount}, available=${isAvailable}, notMyQuote=${notMyQuote}, final=${finalAvailable}`)
-          return finalAvailable
+          return isAvailable && notMyQuote
         })
         .sort((a, b) => {
           // 먼저 currentQuoteCount로 정렬, 같으면 createdAt으로 정렬
@@ -485,7 +469,6 @@ export class FirestoreService {
           return b.createdAt.getTime() - a.createdAt.getTime()
         })
       
-      console.log('✅ 사용 가능한 요청:', availableRequests.length, '건')
       return availableRequests
     } catch (error) {
       console.error('Error getting available warehouse requests:', error)

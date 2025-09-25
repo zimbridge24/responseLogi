@@ -1,92 +1,58 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
-    <!-- Background Elements -->
-    <div class="absolute inset-0 overflow-hidden">
-      <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div class="absolute top-40 left-1/2 w-80 h-80 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-    </div>
-
+  <div class="min-h-screen bg-gray-50">
     <!-- Navigation -->
-    <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-          <span class="text-white text-xl">📦</span>
-        </div>
-        <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          응답하라 창고
-        </span>
-      </div>
-      <div class="flex items-center space-x-8">
-        <div class="text-gray-800 font-semibold text-lg">
-          {{ user.user?.name || '사용자' }}님 ({{ user.role === 'customer' ? '고객' : user.role === 'partner' ? '파트너' : '관리자' }})
-        </div>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          홈으로
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          :to="user.role === 'customer' ? '/customer/requests' : '/partner/requests'"
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          {{ user.role === 'customer' ? '내 요청' : '견적 신청서' }}
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <button 
-          @click="handleLogout"
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          로그아웃
-        </button>
-      </div>
-    </nav>
+    <BaseNavbar />
 
     <!-- Main Content -->
-    <main class="relative z-10 px-8 py-16">
-      <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-12">
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">채팅 목록</h1>
-          <p class="text-lg text-gray-600">
-            {{ user.role === 'customer' ? '파트너들과의 대화를 확인하세요' : '고객들과의 대화를 확인하세요' }}
-          </p>
-        </div>
+    <main class="max-w-4xl mx-auto px-4 py-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">채팅</h1>
+        <p class="text-gray-600 text-sm">
+          {{ user.role === 'customer' ? '파트너들과의 대화를 확인하세요' : '고객들과의 대화를 확인하세요' }}
+        </p>
+      </div>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="flex justify-center items-center py-20">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
 
-        <!-- Empty State -->
-        <div v-else-if="chats.length === 0" class="text-center py-16">
-          <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl text-gray-400">💬</span>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">아직 채팅이 없습니다</h3>
-          <p class="text-gray-600 text-sm">메시지를 주고받은 채팅이 여기에 표시됩니다</p>
+      <!-- Empty State -->
+      <div v-else-if="chats.length === 0" class="text-center py-16">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl text-gray-400">💬</span>
         </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">아직 채팅이 없습니다</h3>
+        <p class="text-gray-600 text-sm">메시지를 주고받은 채팅이 여기에 표시됩니다</p>
+      </div>
 
-        <!-- Chat List -->
-        <div v-else class="space-y-3">
-          <div 
-            v-for="chat in chats" 
-            :key="chat.id"
-            @click="openChat(chat)"
-            class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-4 hover:shadow-xl hover:bg-white transition-all duration-200 cursor-pointer"
-          >
-            <div class="flex items-center justify-between">
+      <!-- Chat List -->
+      <div v-else class="space-y-2">
+        <div 
+          v-for="chat in chats" 
+          :key="chat.id"
+          @click="openChat(chat)"
+          class="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-md hover:border-gray-200 transition-all duration-200 cursor-pointer"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3 flex-1 min-w-0">
+              <!-- Quote Icon -->
+              <span class="text-2xl">📋</span>
+              
+              <!-- Chat Info -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center space-x-2">
-                  <h3 class="text-lg font-semibold text-gray-900 truncate">
+                  <h3 class="text-base font-semibold text-gray-900 truncate">
                     {{ chat.otherUserName || '알 수 없음' }}
-                    <!-- 읽지 않은 메시지가 있을 때 +숫자 표시 -->
-                    <span v-if="chat.unreadCount > 0" class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white">
-                      +{{ chat.unreadCount > 99 ? '99' : chat.unreadCount }}
-                    </span>
                   </h3>
+                  <!-- New Message Badge -->
+                  <span 
+                    v-if="chat.unreadCount > 0" 
+                    class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full flex-shrink-0"
+                  >
+                    {{ chat.unreadCount > 9 ? '9+' : chat.unreadCount }}
+                  </span>
                 </div>
                 <p v-if="chat.lastMessage" class="text-sm text-gray-600 truncate mt-1">
                   {{ chat.lastMessage }}
@@ -95,11 +61,13 @@
                   아직 메시지가 없습니다
                 </p>
               </div>
-              <div class="ml-3 flex-shrink-0">
-                <span class="text-xs text-gray-500">
-                  {{ chat.lastMessageAt ? formatTime(chat.lastMessageAt) : '' }}
-                </span>
-              </div>
+            </div>
+            
+            <!-- Time -->
+            <div class="ml-3 flex-shrink-0">
+              <span class="text-xs text-gray-500">
+                {{ chat.lastMessageAt ? formatTime(chat.lastMessageAt) : '' }}
+              </span>
             </div>
           </div>
         </div>
@@ -412,16 +380,6 @@ const formatTime = (date: any) => {
   })
 }
 
-// 로그아웃 함수
-const handleLogout = async () => {
-  try {
-    await user.logout()
-    navigateTo('/')
-  } catch (error) {
-    console.error('로그아웃 실패:', error)
-  }
-}
-
 // 컴포넌트 언마운트 시 정리
 onUnmounted(() => {
   if (unsubscribeChats) {
@@ -429,32 +387,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
-<style scoped>
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-</style>

@@ -1,52 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-teal-50">
+  <div class="min-h-screen bg-gray-50">
     <!-- Navigation -->
-    <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-green-600 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-          <span class="text-white text-xl">🏢</span>
-        </div>
-        <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          파트너
-        </span>
-      </div>
-      <div class="flex items-center space-x-8">
-        <div class="text-gray-800 font-semibold text-lg">
-          {{ user.user?.companyName || '업체명' }}
-        </div>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/partner/my-quotes" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          작성한견적
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/partner/completed-quotes" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          체결된견적
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/chat-list" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full flex items-center"
-        >
-          채팅
-          <span v-if="unreadChatCount > 0" class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white">
-            {{ unreadChatCount > 99 ? '99+' : unreadChatCount }}
-          </span>
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <button 
-          @click="handleLogout"
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          로그아웃
-        </button>
-      </div>
-    </nav>
+    <BaseNavbar />
 
     <!-- Main Content -->
     <main class="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-100px)] text-center px-8">
@@ -137,8 +92,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { FirestoreService } from '~/lib/services/firestore'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 definePageMeta({
   middleware: 'role-partner'
@@ -154,6 +110,8 @@ const acceptedQuotes = ref(0)
 const unreadChatCount = ref(0)
 const requests = ref<any[]>([])
 const loading = ref(false)
+let unsubscribeRequests: (() => void) | null = null
+let unsubscribeQuotes: (() => void) | null = null
 
 // 데이터 로드
 const loadData = async () => {
@@ -161,8 +119,8 @@ const loadData = async () => {
   try {
     const firestoreService = new FirestoreService($db)
     
-    // 사용 가능한 견적 요청 목록
-    const allRequests = await firestoreService.getAvailableWarehouseRequests()
+    // 사용 가능한 견적 요청 목록 (현재 파트너 ID 전달)
+    const allRequests = await firestoreService.getAvailableWarehouseRequests(user.currentUser?.uid)
     requests.value = allRequests
     availableRequests.value = allRequests.length
     
@@ -174,16 +132,47 @@ const loadData = async () => {
     const acceptedBids = myBids.filter(bid => bid.status === 'accepted')
     acceptedQuotes.value = acceptedBids.length
     
-    console.log('파트너 대시보드 데이터 로드 완료:', {
-      availableRequests: availableRequests.value,
-      myQuotes: myQuotes.value,
-      acceptedQuotes: acceptedQuotes.value,
-      requests: requests.value.length
-    })
   } catch (error) {
     console.error('데이터 로드 실패:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 실시간 구독 시작
+const startRealtimeSubscription = () => {
+  if (!user.currentUser?.uid) return
+  
+  try {
+    // 견적 요청 실시간 구독
+    const requestsRef = collection($db, 'warehouseRequests')
+    const requestsQuery = query(requestsRef, where('status', '==', 'pending'))
+    
+    unsubscribeRequests = onSnapshot(requestsQuery, async () => {
+      await loadData()
+    })
+    
+    // 내 견적 실시간 구독
+    const quotesRef = collection($db, 'warehouseQuotes')
+    const quotesQuery = query(quotesRef, where('partnerId', '==', user.currentUser.uid))
+    
+    unsubscribeQuotes = onSnapshot(quotesQuery, async () => {
+      await loadData()
+    })
+  } catch (error) {
+    console.error('실시간 구독 설정 실패:', error)
+  }
+}
+
+// 실시간 구독 중지
+const stopRealtimeSubscription = () => {
+  if (unsubscribeRequests) {
+    unsubscribeRequests()
+    unsubscribeRequests = null
+  }
+  if (unsubscribeQuotes) {
+    unsubscribeQuotes()
+    unsubscribeQuotes = null
   }
 }
 
@@ -263,8 +252,22 @@ onMounted(async () => {
     return
   }
   
-  loadData()
+  // 인증 상태가 준비될 때까지 대기
+  let attempts = 0
+  const maxAttempts = 50 // 5초 (100ms * 50)
+  
+  while (!user.authReady && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 100))
+    attempts++
+  }
+  
+  await loadData()
   calculateUnreadChatCount()
+  startRealtimeSubscription()
+})
+
+onUnmounted(() => {
+  stopRealtimeSubscription()
 })
 </script>
 

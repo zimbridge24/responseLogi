@@ -3,6 +3,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   
   // 사용자가 로그인되어 있지 않으면 관리자 로그인 페이지로 리다이렉트
   if (!user.currentUser) {
+    console.log('관리자 미들웨어: 사용자 로그인되지 않음, /admin/login으로 리다이렉트')
     return navigateTo('/admin/login')
   }
   
@@ -16,11 +17,18 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
   }
   
+  console.log('관리자 미들웨어: 사용자 정보:', {
+    currentUser: user.currentUser,
+    userProfile: user.userProfile,
+    role: user.role,
+    isAdmin: user.isAdmin
+  })
+  
   // 관리자 권한 확인 (하드코딩된 관리자 또는 일반 관리자)
   if (!user.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Admin role required.'
-    })
+    console.log('관리자 미들웨어: 관리자 권한 없음, /admin/login으로 리다이렉트')
+    return navigateTo('/admin/login')
   }
+  
+  console.log('관리자 미들웨어: 관리자 권한 확인됨')
 })

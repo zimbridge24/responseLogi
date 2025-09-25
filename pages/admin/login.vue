@@ -115,9 +115,14 @@ const handleLogin = async () => {
   error.value = ''
 
   try {
+    console.log('로그인 시도:', formData.value.username, formData.value.password)
+    console.log('기대값:', ADMIN_CREDENTIALS.username, ADMIN_CREDENTIALS.password)
+    
     // 하드코딩된 정보와 비교
     if (formData.value.username === ADMIN_CREDENTIALS.username && 
         formData.value.password === ADMIN_CREDENTIALS.password) {
+      
+      console.log('인증 정보 일치, 관리자 로그인 진행')
       
       // 관리자 로그인 성공
       const userStore = useUserStore()
@@ -132,11 +137,32 @@ const handleLogin = async () => {
         phone: '010-0000-0000'
       })
 
-      console.log('관리자 로그인 성공')
+      console.log('관리자 사용자 설정 완료, 상태 확인:', {
+        currentUser: userStore.currentUser,
+        role: userStore.role,
+        isAdmin: userStore.isAdmin,
+        authReady: userStore.authReady
+      })
       
-      // 관리자 대시보드로 이동
-      await navigateTo('/admin/dashboard')
+      // Nuxt 라우팅 방식으로 리다이렉트
+      console.log('관리자 대시보드로 리다이렉트 시작')
+      
+      // 로그인 성공 메시지 표시
+      error.value = '로그인 성공! 관리자 대시보드로 이동합니다...'
+      
+      // Nuxt 라우터를 사용한 리다이렉트
+      setTimeout(async () => {
+        try {
+          await navigateTo('/admin')
+        } catch (error) {
+          console.error('리다이렉트 실패:', error)
+          // 백업으로 window.location 사용
+          window.location.href = '/admin'
+        }
+      }, 500)
+      
     } else {
+      console.log('인증 정보 불일치')
       error.value = '잘못된 관리자 ID 또는 비밀번호입니다.'
     }
   } catch (err: any) {

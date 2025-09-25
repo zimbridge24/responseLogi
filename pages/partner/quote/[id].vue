@@ -474,11 +474,7 @@ const submitQuote = async () => {
 
     // 견적 제출 성공 후 자동으로 홈으로 이동
     console.log('견적이 성공적으로 제출되었습니다!')
-    await navigateTo('/')
-    // 페이지 새로고침하여 최신 데이터 로드
-    if (process.client) {
-      window.location.reload()
-    }
+    await navigateTo('/partner')
   } catch (error) {
     console.error('견적 응답 제출 실패:', error)
     errorMessage.value = '견적 제출에 실패했습니다. 다시 시도해주세요.'

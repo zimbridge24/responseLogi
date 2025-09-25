@@ -5,7 +5,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center space-x-8">
-            <h1 class="text-xl font-bold text-gray-900">견적 플랫폼</h1>
+            <NuxtLink to="/admin" class="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">응답하라 창고</NuxtLink>
             <div class="flex space-x-4">
               <NuxtLink to="/admin/requests" class="text-gray-700 hover:text-gray-900">요청 관리</NuxtLink>
               <NuxtLink to="/admin/bids" class="text-blue-600 font-medium">견적 관리</NuxtLink>
@@ -160,41 +160,89 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { FirestoreService } from '~/lib/services/firestore'
+
 definePageMeta({
   middleware: 'role-admin'
 })
 
 const { userProfile, logout } = useUserStore()
-const { bids, loading, fetchBidsByRequest, updateBid, deleteBid } = useBidsStore()
+const { $db } = useNuxtApp()
 
+const bids = ref<any[]>([])
+const loading = ref(true)
 const selectedStatus = ref('')
 const selectedBid = ref(null)
 
 const columns = [
-  { key: 'requestId', label: '요청 ID' },
-  { key: 'partnerId', label: '파트너 ID' },
-  { key: 'amount', label: '견적 금액', format: 'currency' },
+  { key: 'partnerName', label: '파트너명' },
+  { key: 'customerName', label: '고객명' },
+  { key: 'storageFee', label: '보관비', format: 'currency' },
   { key: 'status', label: '상태' },
   { key: 'createdAt', label: '제출일', format: 'date' },
 ]
 
 const filteredBids = computed(() => {
-  if (!selectedStatus.value) return bids
-  return bids.filter(bid => bid.status === selectedStatus.value)
+  if (!selectedStatus.value) return bids.value
+  return bids.value.filter(bid => bid.status === selectedStatus.value)
 })
 
 const stats = computed(() => {
   return {
-    pending: bids.filter(bid => bid.status === 'pending').length,
-    accepted: bids.filter(bid => bid.status === 'accepted').length,
-    rejected: bids.filter(bid => bid.status === 'rejected').length,
-    withdrawn: bids.filter(bid => bid.status === 'withdrawn').length,
+    pending: bids.value.filter(bid => bid.status === 'pending').length,
+    accepted: bids.value.filter(bid => bid.status === 'accepted').length,
+    rejected: bids.value.filter(bid => bid.status === 'rejected').length,
+    withdrawn: bids.value.filter(bid => bid.status === 'withdrawn').length,
   }
 })
 
+// 데이터 로드
+const loadBids = async () => {
+  loading.value = true
+  try {
+    const firestoreService = new FirestoreService($db)
+    const allBids = await firestoreService.getWarehouseQuotes([])
+    
+    // 파트너와 고객 정보 추가
+    const bidsWithInfo = []
+    for (const bid of allBids) {
+      try {
+        const [partner, request] = await Promise.all([
+          firestoreService.getUser(bid.partnerId),
+          firestoreService.getWarehouseRequest(bid.requestId)
+        ])
+        
+        const customer = request ? await firestoreService.getUser(request.customerId) : null
+        
+        bidsWithInfo.push({
+          ...bid,
+          partnerName: partner?.name || '알 수 없음',
+          customerName: customer?.name || '알 수 없음',
+          amount: bid.storageFee // 기존 amount 필드와 호환성을 위해
+        })
+      } catch (error) {
+        console.error('견적 정보 로드 실패:', error)
+        bidsWithInfo.push({
+          ...bid,
+          partnerName: '알 수 없음',
+          customerName: '알 수 없음',
+          amount: bid.storageFee
+        })
+      }
+    }
+    
+    bids.value = bidsWithInfo
+    console.log('견적 데이터 로드 완료:', bids.value.length)
+  } catch (error) {
+    console.error('견적 데이터 로드 실패:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
-  // Load all bids - this would need to be implemented in the store
-  // For now, we'll show empty state
+  await loadBids()
 })
 
 const viewBid = (bid: any) => {

@@ -13,6 +13,7 @@
     "@vee-validate/rules": "^4.12.6",
     "@vee-validate/yup": "^4.12.6",
     "firebase": "^11.10.0",
+    "firebase-admin": "^13.5.0",
     "nuxt": "^4.1.2",
     "pinia": "3.0.3",
     "tailwindcss": "^3.4.0",

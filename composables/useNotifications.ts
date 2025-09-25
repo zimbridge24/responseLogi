@@ -1,21 +1,31 @@
 import { ref } from 'vue';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { useFirestore } from 'vuefire';
-import { useRuntimeConfig } from '#app';
 
 export function useNotifications() {
   const config = useRuntimeConfig().public;
   const messaging = getMessaging();
-  const firestore = useFirestore();
+  
+  // Firebase Firestore 인스턴스 가져오기
+  const getFirestore = () => {
+    if (typeof window !== 'undefined') {
+      const { $db } = useNuxtApp();
+      return $db;
+    }
+    return null;
+  };
 
   const requestPermission = async () => {
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const token = await getToken(messaging, { vapidKey: config.vapidKey });
+        const token = await getToken(messaging, { vapidKey: config.FCM_VAPID_KEY });
         if (token) {
-          const uid = 'user-uid'; // Replace with actual user UID
-          await firestore.collection('userTokens').doc(uid).set({ token });
+          const firestore = getFirestore();
+          if (firestore) {
+            const uid = 'user-uid'; // Replace with actual user UID
+            const { doc, setDoc } = await import('firebase/firestore');
+            await setDoc(doc(firestore, 'userTokens', uid), { token });
+          }
         }
       }
     } catch (error) {
@@ -27,13 +37,15 @@ export function useNotifications() {
     onMessage(messaging, (payload) => {
       console.log('Message received. ', payload);
       // Customize notification handling here
-      const notificationTitle = payload.notification.title;
-      const notificationOptions = {
-        body: payload.notification.body,
-        icon: payload.notification.icon,
-      };
+      if (payload.notification) {
+        const notificationTitle = payload.notification.title || 'New Message';
+        const notificationOptions = {
+          body: payload.notification.body || '',
+          icon: payload.notification.icon || '/icon-192x192.png',
+        };
 
-      new Notification(notificationTitle, notificationOptions);
+        new Notification(notificationTitle, notificationOptions);
+      }
     });
   };
 

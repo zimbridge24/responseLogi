@@ -1,108 +1,144 @@
-import { defineNuxtPlugin, useRuntimeConfig } from '#app'
-import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, RecaptchaVerifier } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
-import { getFunctions } from 'firebase/functions'
-import { getStorage } from 'firebase/storage'
+import { initializeApp } from 'firebase/app'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
+import { getAnalytics } from 'firebase/analytics'
+import { RecaptchaVerifier } from 'firebase/auth'
 
-export default defineNuxtPlugin((nuxtApp) => {
-  // 이미 Firebase가 초기화되었는지 확인
-  if (nuxtApp.$firebase) {
-    console.log('Firebase already initialized')
-    return
-  }
+// 전역 변수로 Firebase 인스턴스 관리
+let firebaseApp: any = null
+let firebaseAuth: any = null
+let firebaseDb: any = null
+let firebaseFunctions: any = null
+let firebaseStorage: any = null
+let firebaseAnalytics: any = null
 
-  try {
-    const config = useRuntimeConfig().public
-
-    console.log('Firebase config check:', {
-      apiKey: config.FIREBASE_API_KEY ? '✅' : '❌',
-      authDomain: config.FIREBASE_AUTH_DOMAIN ? '✅' : '❌',
-      projectId: config.FIREBASE_PROJECT_ID ? '✅' : '❌',
-      storageBucket: config.FIREBASE_STORAGE_BUCKET ? '✅' : '❌',
-      messagingSenderId: config.FIREBASE_MESSAGING_SENDER_ID ? '✅' : '❌',
-      appId: config.FIREBASE_APP_ID ? '✅' : '❌',
-    })
-
-    console.log('Full config object:', config)
-
-    // 환경 변수 직접 확인
-    console.log('Direct env check:', {
-      NUXT_PUBLIC_FIREBASE_API_KEY: process.env.NUXT_PUBLIC_FIREBASE_API_KEY ? '✅' : '❌',
-      NUXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID ? '✅' : '❌',
-    })
-
-    // Firebase 설정값 검증 - 환경 변수 직접 사용
-    const apiKey = config.FIREBASE_API_KEY || process.env.NUXT_PUBLIC_FIREBASE_API_KEY
-    const projectId = config.FIREBASE_PROJECT_ID || process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID
-    const authDomain = config.FIREBASE_AUTH_DOMAIN || process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    const storageBucket = config.FIREBASE_STORAGE_BUCKET || process.env.NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    const messagingSenderId = config.FIREBASE_MESSAGING_SENDER_ID || process.env.NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    const appId = config.FIREBASE_APP_ID || process.env.NUXT_PUBLIC_FIREBASE_APP_ID
-
-    if (!apiKey || !projectId) {
-      console.error('Firebase configuration is incomplete:', {
-        apiKey: !!apiKey,
-        projectId: !!projectId,
-        authDomain: !!authDomain,
-        storageBucket: !!storageBucket,
-        messagingSenderId: !!messagingSenderId,
-        appId: !!appId
-      })
+export default defineNuxtPlugin({
+  name: 'firebase-init',
+  parallel: true,
+  setup(nuxtApp) {
+    // 클라이언트에서만 실행
+    if (process.server) {
       return
     }
 
-    // Firebase가 이미 초기화되었는지 확인
-    let app
-    if (getApps().length === 0) {
+    // 이미 초기화되었는지 확인
+    if (firebaseApp) {
+      console.log('Firebase already initialized globally')
+      return
+    }
+
+    try {
+      const config = useRuntimeConfig()
+
+      // Firebase 설정
       const firebaseConfig = {
-        apiKey: apiKey,
-        authDomain: authDomain,
-        projectId: projectId,
-        storageBucket: storageBucket,
-        messagingSenderId: messagingSenderId,
-        appId: appId,
+        apiKey: config.public.FIREBASE_API_KEY,
+        authDomain: config.public.FIREBASE_AUTH_DOMAIN,
+        projectId: config.public.FIREBASE_PROJECT_ID,
+        storageBucket: config.public.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: config.public.FIREBASE_MESSAGING_SENDER_ID,
+        appId: config.public.FIREBASE_APP_ID,
       }
 
-    console.log('Initializing Firebase with config:', {
-      apiKey: apiKey ? '✅' : '❌',
-      authDomain: authDomain ? '✅' : '❌',
-      projectId: projectId ? '✅' : '❌',
-      storageBucket: storageBucket ? '✅' : '❌',
-      messagingSenderId: messagingSenderId ? '✅' : '❌',
-      appId: appId ? '✅' : '❌',
-    })
-    app = initializeApp(firebaseConfig)
-    console.log('Firebase app initialized:', app)
-    } else {
-      app = getApps()[0]
-      console.log('Using existing Firebase app:', app)
+      // Firebase 앱 초기화
+      firebaseApp = initializeApp(firebaseConfig)
+      console.log('Firebase app initialized')
+
+      // Firebase 서비스들 초기화
+      firebaseAuth = getAuth(firebaseApp)
+      firebaseDb = getFirestore(firebaseApp)
+      firebaseFunctions = getFunctions(firebaseApp, 'us-central1')
+      firebaseStorage = getStorage(firebaseApp)
+
+      console.log('Firebase services initialized:', {
+        auth: !!firebaseAuth,
+        db: !!firebaseDb,
+        functions: !!firebaseFunctions,
+        storage: !!firebaseStorage
+      })
+
+      // 개발 환경에서 에뮬레이터 연결
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          // Auth 에뮬레이터
+          if (!firebaseAuth._delegate._config.emulator) {
+            connectAuthEmulator(firebaseAuth, 'http://localhost:9099', { disableWarnings: true })
+            console.log('Auth emulator connected')
+          }
+        } catch (error) {
+          console.log('Auth emulator already connected or not available')
+        }
+
+        try {
+          // Firestore 에뮬레이터
+          if (!firebaseDb._delegate._databaseId.projectId.includes('demo-')) {
+            connectFirestoreEmulator(firebaseDb, 'localhost', 8080)
+            console.log('Firestore emulator connected')
+          }
+        } catch (error) {
+          console.log('Firestore emulator already connected or not available')
+        }
+
+        try {
+          // Functions 에뮬레이터
+          connectFunctionsEmulator(firebaseFunctions, 'localhost', 5001)
+          console.log('Functions emulator connected')
+        } catch (error) {
+          console.log('Functions emulator already connected or not available')
+        }
+
+        try {
+          // Storage 에뮬레이터
+          connectStorageEmulator(firebaseStorage, 'localhost', 9199)
+          console.log('Storage emulator connected')
+        } catch (error) {
+          console.log('Storage emulator already connected or not available')
+        }
+      }
+
+      // Analytics 초기화 (클라이언트에서만)
+      if (process.client) {
+        try {
+          firebaseAnalytics = getAnalytics(firebaseApp)
+          console.log('Analytics initialized')
+        } catch (error) {
+          console.log('Analytics not available:', error)
+        }
+      }
+
+      // Nuxt 앱에 Firebase 서비스들 제공 (안전한 방법)
+      try {
+        if (!nuxtApp.$firebase) {
+          nuxtApp.$firebase = firebaseApp
+        }
+        if (!nuxtApp.$auth) {
+          nuxtApp.$auth = firebaseAuth
+        }
+        if (!nuxtApp.$db) {
+          nuxtApp.$db = firebaseDb
+        }
+        if (!nuxtApp.$functions) {
+          nuxtApp.$functions = firebaseFunctions
+        }
+        if (!nuxtApp.$storage) {
+          nuxtApp.$storage = firebaseStorage
+        }
+        if (!nuxtApp.$analytics) {
+          nuxtApp.$analytics = firebaseAnalytics
+        }
+        if (!nuxtApp.$RecaptchaVerifier) {
+          nuxtApp.$RecaptchaVerifier = RecaptchaVerifier
+        }
+        
+        console.log('Firebase services provided to Nuxt app')
+      } catch (error) {
+        console.error('Error providing Firebase services:', error)
+      }
+
+    } catch (error) {
+      console.error('Firebase initialization error:', error)
     }
-
-    const auth = getAuth(app)
-    const db = getFirestore(app)
-    const functions = getFunctions(app)
-    const storage = getStorage(app)
-
-    console.log('Firebase services initialized:', {
-      auth: !!auth,
-      db: !!db,
-      functions: !!functions,
-      storage: !!storage
-    })
-
-    return {
-      provide: {
-        firebase: app,
-        auth,
-        db,
-        functions,
-        storage,
-        RecaptchaVerifier,
-      },
-    }
-  } catch (error) {
-    console.error('Firebase initialization error:', error)
-    return
   }
 })

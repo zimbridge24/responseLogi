@@ -1,54 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
-    <!-- Background Elements -->
-    <div class="absolute inset-0 overflow-hidden">
-      <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div class="absolute top-40 left-1/2 w-80 h-80 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-    </div>
-
+  <div class="min-h-screen bg-gray-50">
     <!-- Navigation -->
-    <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
-      <div class="flex items-center space-x-3">
-        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-            <span class="text-white text-xl">📦</span>
-          </div>
-          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            응답하라 창고
-          </span>
-        </NuxtLink>
-      </div>
-      <div class="flex items-center space-x-8">
-        <div class="text-gray-800 font-semibold text-lg">
-          {{ user.user?.name || '사용자' }}님
-        </div>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/chat-list" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full flex items-center space-x-2"
-        >
-          <span>채팅</span>
-          <span v-if="unreadChatCount > 0" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-            {{ unreadChatCount > 99 ? '99+' : unreadChatCount }}
-          </span>
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <NuxtLink 
-          to="/customer/completed-quotes" 
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          완료된 견적
-        </NuxtLink>
-        <div class="w-px h-6 bg-gray-300"></div>
-        <button 
-          @click="handleLogout"
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-        >
-          로그아웃
-        </button>
-      </div>
-    </nav>
+    <BaseNavbar />
 
     <!-- Main Content -->
     <main class="relative z-10 flex flex-col items-center justify-center flex-1 px-8 py-16">

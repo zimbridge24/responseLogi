@@ -21,9 +21,15 @@ export const useUserStore = defineStore('user', () => {
   const getAuthInstance = () => {
     if (!auth) {
       try {
-        const { $auth } = useNuxtApp()
-        auth = $auth
-        console.log('Auth instance retrieved:', !!auth)
+        // 클라이언트에서만 Firebase 인스턴스 가져오기
+        if (process.client) {
+          const nuxtApp = useNuxtApp()
+          auth = nuxtApp.$auth
+          console.log('Auth instance retrieved:', !!auth)
+        } else {
+          console.log('Server side - auth not available')
+          return null
+        }
       } catch (error) {
         console.error('Failed to get auth instance:', error)
         return null
@@ -44,6 +50,12 @@ export const useUserStore = defineStore('user', () => {
   // Initialize auth state listener only once
   const initializeAuth = () => {
     if (authInitialized.value) return
+    
+    // 클라이언트에서만 실행
+    if (!process.client) {
+      console.log('Server side - skipping auth initialization')
+      return
+    }
     
     console.log('Initializing auth state listener...')
     authInitialized.value = true
@@ -245,6 +257,8 @@ export const useUserStore = defineStore('user', () => {
 
   // 관리자 사용자 설정 (하드코딩된 로그인용)
   function setAdminUser(adminData: any) {
+    console.log('setAdminUser 호출됨:', adminData)
+    
     currentUser.value = {
       uid: adminData.uid,
       email: adminData.email,
@@ -278,8 +292,16 @@ export const useUserStore = defineStore('user', () => {
     
     role.value = 'admin'
     authReady.value = true
+    authInitialized.value = true
     
-    console.log('관리자 사용자 설정 완료:', adminData.name)
+    console.log('관리자 사용자 설정 완료:', {
+      name: adminData.name,
+      currentUser: !!currentUser.value,
+      userProfile: !!userProfile.value,
+      role: role.value,
+      authReady: authReady.value,
+      authInitialized: authInitialized.value
+    })
   }
 
   // 일반 사용자 설정 (파트너/고객 로그인용)
