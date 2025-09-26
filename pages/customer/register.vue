@@ -151,11 +151,6 @@ const formatPhoneNumber = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/\D/g, '') // 숫자가 아닌 문자 제거
   
-  // 010으로 시작하지 않으면 010 추가
-  if (value.length > 0 && !value.startsWith('010')) {
-    value = '010' + value
-  }
-  
   // 최대 11자리로 제한
   if (value.length > 11) {
     value = value.substring(0, 11)
@@ -165,36 +160,66 @@ const formatPhoneNumber = (event: Event) => {
   target.value = value
 }
 
-// reCAPTCHA 초기화
+// reCAPTCHA 초기화 (완전 정리 후 재생성)
 const initializeRecaptcha = async () => {
-  if (recaptchaVerifier.value) {
-    return recaptchaVerifier.value
-  }
+  if (!process.client) return null
 
   const { $auth, $RecaptchaVerifier } = useNuxtApp()
   
   if (!$auth) {
     throw new Error('Firebase auth not initialized')
   }
-  
-  // 기존 reCAPTCHA 제거
-  const container = document.getElementById('recaptcha-container')
-  if (container) {
-    container.innerHTML = ''
-  }
-  
-  // reCAPTCHA 설정
-  recaptchaVerifier.value = new $RecaptchaVerifier($auth, 'recaptcha-container', {
-    size: 'invisible',
-    callback: () => {
-      console.log('reCAPTCHA solved')
+
+  // 기존 reCAPTCHA 완전 정리
+  if (recaptchaVerifier.value) {
+    try {
+      recaptchaVerifier.value.clear()
+    } catch (e) {
+      console.warn('reCAPTCHA clear failed:', e)
     }
-  })
-  
-  // reCAPTCHA 렌더링
-  await recaptchaVerifier.value.render()
-  
-  return recaptchaVerifier.value
+    recaptchaVerifier.value = null
+  }
+
+  // 기존 컨테이너 제거
+  const existingContainer = document.getElementById('recaptcha-container')
+  if (existingContainer) {
+    existingContainer.remove()
+  }
+
+  // 새로운 컨테이너 생성
+  const container = document.createElement('div')
+  container.id = 'recaptcha-container'
+  container.style.position = 'fixed'
+  container.style.left = '-9999px'
+  container.style.top = '0'
+  container.style.width = '1px'
+  container.style.height = '1px'
+  container.style.overflow = 'hidden'
+  document.body.appendChild(container)
+
+  // 잠시 대기 후 reCAPTCHA 생성
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  try {
+    recaptchaVerifier.value = new $RecaptchaVerifier($auth, container, {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA solved')
+      }
+    })
+
+    await recaptchaVerifier.value.render()
+    console.log('reCAPTCHA initialized successfully')
+    
+    return recaptchaVerifier.value
+  } catch (error) {
+    console.error('reCAPTCHA initialization failed:', error)
+    // 실패 시 컨테이너 정리
+    try {
+      container.remove()
+    } catch (e) {}
+    throw error
+  }
 }
 
 // 인증번호 전송
@@ -288,12 +313,35 @@ const handleSubmit = async () => {
 
   try {
     const { $db } = useNuxtApp()
-    const { doc, setDoc } = await import('firebase/firestore')
+    const { doc, setDoc, getDoc, collection, query, where, getDocs } = await import('firebase/firestore')
     
     // 현재 인증된 사용자 정보 가져오기
     const currentUser = useNuxtApp().$auth.currentUser
     if (!currentUser) {
       throw new Error('인증된 사용자 정보를 찾을 수 없습니다.')
+    }
+
+    // 전화번호로 기존 사용자 확인
+    const usersRef = collection($db, 'users')
+    const q = query(usersRef, where('phone', '==', formData.value.phone))
+    const querySnapshot = await getDocs(q)
+    
+    if (!querySnapshot.empty) {
+      // 이미 등록된 전화번호가 있는 경우
+      const shouldLogin = confirm('이미 회원가입이 완료된 이용자입니다. 로그인 페이지로 가시겠습니까?')
+      
+      if (shouldLogin) {
+        // 고객 로그인 페이지로 이동
+        await navigateTo('/customer/login')
+      } else {
+        // 기존 페이지에서 전화번호를 다시 입력하도록 폼 초기화
+        formData.value.phone = ''
+        formData.value.verificationCode = ''
+        verificationSent.value = false
+        codeVerified.value = false
+        error.value = '다른 전화번호를 입력해주세요.'
+      }
+      return
     }
 
     // Firestore에 사용자 정보 저장
@@ -309,12 +357,25 @@ const handleSubmit = async () => {
     
     console.log('고객 회원가입 완료:', currentUser.uid)
     
-    // 고객 요청 페이지로 리다이렉트
-    await navigateTo('/customer/requests')
+    // 로그아웃 후 로그인 페이지로 리다이렉트
+    const { getAuth, signOut } = await import('firebase/auth')
+    const auth = getAuth()
+    await signOut(auth)
+    await navigateTo('/customer/login')
     
   } catch (err: any) {
     console.error('회원가입 실패:', err)
     error.value = '회원가입에 실패했습니다. 다시 시도해주세요.'
+    
+    // 회원가입 실패 시 완전히 로그아웃하고 메인 화면으로 이동
+    try {
+      const { getAuth, signOut } = await import('firebase/auth')
+      const auth = getAuth()
+      await signOut(auth)
+      await navigateTo('/')
+    } catch (logoutError) {
+      console.error('로그아웃 실패:', logoutError)
+    }
   } finally {
     loading.value = false
   }
@@ -328,7 +389,28 @@ onMounted(() => {
 
 // 페이지 언마운트 시 정리
 onUnmounted(() => {
-  // 필요한 정리 작업만 수행
+  // reCAPTCHA 인스턴스 정리
+  if (recaptchaVerifier.value) {
+    try {
+      recaptchaVerifier.value.clear()
+      console.log('reCAPTCHA cleared on unmount')
+    } catch (error) {
+      console.warn('reCAPTCHA 정리 중 오류:', error)
+    }
+    recaptchaVerifier.value = null
+  }
+  
+  // reCAPTCHA 컨테이너 완전 제거
+  const container = document.getElementById('recaptcha-container')
+  if (container) {
+    try {
+      container.remove()
+      console.log('reCAPTCHA container removed')
+    } catch (error) {
+      console.warn('컨테이너 제거 중 오류:', error)
+    }
+  }
+  
   console.log('고객 회원가입 페이지 언마운트됨')
 })
 </script>

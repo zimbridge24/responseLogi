@@ -4,27 +4,68 @@ service cloud.firestore {
 
     // Users collection
     match /users/{uid} {
-      allow read, write: if request.auth.uid == uid;
+      allow read, write: if request.auth != null;
     }
 
     // Requests collection
     match /requests/{reqId} {
       allow read: if request.auth != null;
-      allow create: if request.auth.token.role == 'seller' || request.auth.token.role == 'admin';
-      allow update, delete: if request.auth.token.role == 'seller' && resource.data.sellerId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
       
       // Bids subcollection
       match /bids/{bidId} {
         allow read: if request.auth != null;
-        allow create: if request.auth.token.role == 'partner';
-        allow update, delete: if request.auth.token.role == 'partner' && resource.data.partnerId == request.auth.uid;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null;
       }
+    }
+
+    // Warehouse requests collection
+    match /warehouseRequests/{reqId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth.uid == resource.data.customerId;
+    }
+
+    // Warehouse quotes collection
+    match /warehouseQuotes/{quoteId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth.uid == resource.data.partnerId;
+    }
+
+    // Top-level bids collection (파트너 견적)
+    match /bids/{bidId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Companies collection
+    match /companies/{companyId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Completed quotes collection
+    match /completedQuotes/{completedQuoteId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Files collection (for file uploads)
+    match /files/{fileId} {
+      allow read, write: if request.auth != null;
     }
 
     // Matches collection
     match /matches/{matchId} {
       allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'admin';
+      allow write: if request.auth != null;
     }
 
     // UserTokens collection
@@ -34,7 +75,12 @@ service cloud.firestore {
 
     // Chats (고객/파트너 채팅)
     match /chats/{chatId} {
-      allow read, write: if request.auth != null && request.auth.uid in resource.data.participants;
+      allow read, write: if request.auth != null;
+      
+      // Chat messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null;
+      }
     }
   }
 }

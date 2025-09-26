@@ -153,107 +153,111 @@
 
           <!-- 받은 견적 목록 -->
           <div v-if="selectedRequestQuotes.length > 0">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">받은 견적 ({{ selectedRequestQuotes.length }}개)</h3>
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-lg font-semibold text-gray-900">받은 견적 ({{ selectedRequestQuotes.length }}개)</h3>
+              <button 
+                @click="compareQuotes"
+                class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                📊 견적 비교하기
+              </button>
+            </div>
+            
+            <!-- 정리된 견적 카드 목록 -->
             <div class="space-y-4">
               <div 
                 v-for="quote in selectedRequestQuotes" 
                 :key="quote.id"
-                class="bg-green-50 border border-green-200 rounded-lg p-6"
+                class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all duration-200"
               >
-                <!-- 파트너 정보 -->
+                <!-- 헤더: 업체명, 상태, 견적일 -->
                 <div class="flex justify-between items-start mb-4">
                   <div>
-                    <h4 class="font-semibold text-green-900 text-lg">{{ quote.partnerCompany }}</h4>
-                    <p class="text-sm text-green-700">{{ quote.partnerName }}</p>
-                    <p class="text-xs text-green-600 mt-1">{{ quote.partnerPhone }} | {{ quote.partnerEmail }}</p>
+                    <h4 class="text-lg font-bold text-gray-900 mb-1">{{ quote.partnerCompany }}</h4>
+                    <div class="text-sm text-gray-500">견적일: {{ formatDate(quote.createdAt) }}</div>
                   </div>
                   <div class="text-right">
-                    <div class="text-xs text-green-600 mb-1">견적일: {{ formatDate(quote.createdAt) }}</div>
-                    <span :class="getQuoteStatusClass(quote.status)" class="px-2 py-1 rounded-full text-xs font-medium">
+                    <span :class="getQuoteStatusClass(quote.status)" class="px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block">
                       {{ getQuoteStatusText(quote.status) }}
                     </span>
+                    <div class="text-lg font-bold text-blue-600">{{ formatPrice(calculateTotalCost(quote)) }}원</div>
+                    <div class="text-xs text-gray-500">총 예상비용</div>
                   </div>
                 </div>
 
-                <!-- 비용 정보 -->
-                <div class="bg-white rounded-lg p-4 mb-4">
-                  <h4 class="font-semibold text-gray-900 mb-3">비용 정보</h4>
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div class="text-center">
-                      <div class="text-gray-600">입고비</div>
-                      <div class="font-semibold text-gray-900">{{ formatPrice(quote.inboundFee) }}원</div>
-                      <div class="text-xs text-gray-500">개당</div>
-                    </div>
-                    <div class="text-center">
-                      <div class="text-gray-600">보관비</div>
-                      <div class="font-semibold text-gray-900">{{ formatPrice(quote.storageFee) }}원</div>
-                      <div class="text-xs text-gray-500">월/PLT</div>
-                    </div>
-                    <div class="text-center">
-                      <div class="text-gray-600">출고비</div>
-                      <div class="font-semibold text-gray-900">{{ formatPrice(quote.outboundFee) }}원</div>
-                      <div class="text-xs text-gray-500">개당</div>
-                    </div>
-                    <div class="text-center">
-                      <div class="text-gray-600">WMS 비용</div>
-                      <div class="font-semibold text-gray-900">{{ formatPrice(quote.wmsFee) }}원</div>
-                      <div class="text-xs text-gray-500">월</div>
-                    </div>
+                <!-- 비용 정보 그리드 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-gray-600 mb-1">보관료</div>
+                    <div class="font-semibold text-gray-900">{{ formatPrice(quote.storageFee) }}원</div>
+                    <div class="text-xs text-gray-500">월/PLT</div>
+                  </div>
+                  <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-gray-600 mb-1">팔렛료</div>
+                    <div class="font-semibold text-gray-900">{{ formatPrice(quote.palletFee) }}원</div>
+                    <div class="text-xs text-gray-500">월</div>
+                  </div>
+                  <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-gray-600 mb-1">박스료</div>
+                    <div class="font-semibold text-gray-900">{{ formatPrice(quote.boxFee) }}원</div>
+                    <div class="text-xs text-gray-500">월</div>
+                  </div>
+                  <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-gray-600 mb-1">WMS 수수료</div>
+                    <div class="font-semibold text-gray-900">{{ formatPrice(quote.wmsFee) }}원</div>
+                    <div class="text-xs text-gray-500">월</div>
                   </div>
                 </div>
 
-                <!-- 택배 정보 -->
-                <div class="bg-white rounded-lg p-4 mb-4">
-                  <h4 class="font-semibold text-gray-900 mb-3">택배 정보</h4>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div class="text-center">
-                      <div class="text-gray-600">택배비 (극소형)</div>
-                      <div class="font-semibold text-gray-900">{{ formatPrice(quote.courierFeeSmall) }}원</div>
-                    </div>
-                    <div class="text-center">
-                      <div class="text-gray-600">택배비 (소형)</div>
-                      <div class="font-semibold text-gray-900">{{ formatPrice(quote.courierFeeMedium) }}원</div>
-                    </div>
-                    <div class="text-center">
-                      <div class="text-gray-600">택배사</div>
-                      <div class="font-semibold text-gray-900">{{ quote.courierCompany }}</div>
-                    </div>
+                <!-- 출고비 및 택배 정보 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div class="bg-blue-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-blue-600 mb-1">출고비 (소형)</div>
+                    <div class="font-semibold text-blue-900">{{ formatPrice(quote.courierFeeSmall) }}원</div>
+                  </div>
+                  <div class="bg-blue-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-blue-600 mb-1">출고비 (중형)</div>
+                    <div class="font-semibold text-blue-900">{{ formatPrice(quote.courierFeeMedium) }}원</div>
+                  </div>
+                  <div class="bg-blue-50 rounded-lg p-3 text-center">
+                    <div class="text-sm text-blue-600 mb-1">택배사</div>
+                    <div class="font-semibold text-blue-900">{{ quote.courierCompany || '-' }}</div>
                   </div>
                 </div>
 
-                <!-- 견적 설명 -->
-                <div class="bg-white rounded-lg p-4 mb-4">
-                  <h4 class="font-semibold text-gray-900 mb-2">견적 설명</h4>
-                  <p class="text-sm text-gray-700">{{ quote.description }}</p>
+                <!-- 견적 설명 (있는 경우만) -->
+                <div v-if="quote.description" class="mb-4">
+                  <h5 class="text-sm font-semibold text-gray-700 mb-2">견적 설명</h5>
+                  <p class="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{{ quote.description }}</p>
                 </div>
 
-                <!-- 주요 특징 -->
-                <div class="bg-white rounded-lg p-4 mb-4">
-                  <h4 class="font-semibold text-gray-900 mb-2">주요 특징</h4>
-                  <p class="text-sm text-gray-700">{{ quote.keyFeatures }}</p>
+                <!-- 주요 특징 (있는 경우만) -->
+                <div v-if="quote.features" class="mb-4">
+                  <h5 class="text-sm font-semibold text-gray-700 mb-2">주요 특징</h5>
+                  <p class="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{{ quote.features }}</p>
                 </div>
 
                 <!-- 액션 버튼 -->
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center pt-3 border-t border-gray-200">
                   <div class="flex space-x-2">
                     <button 
+                      v-if="quote.status === 'pending'"
                       @click="acceptQuote(quote.id)"
-                      :disabled="quote.status !== 'pending'"
-                      class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                     >
                       견적 수락
                     </button>
                     <button 
+                      v-if="quote.status === 'pending'"
                       @click="deleteQuote(quote.id, quote.partnerName)"
-                      :disabled="quote.status !== 'pending'"
-                      class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors"
                     >
                       삭제
                     </button>
                   </div>
                   <button 
                     @click="startChat(quote)"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                   >
                     <span>💬</span>
                     <span>채팅하기</span>
@@ -677,6 +681,24 @@ const deleteQuote = async (quoteId: string, partnerName: string) => {
   } catch (error) {
     console.error('견적 삭제 실패:', error)
     alert('견적서 삭제에 실패했습니다.')
+  }
+}
+
+// 총 비용 계산
+const calculateTotalCost = (quote: any) => {
+  const storageFee = quote.storageFee || 0
+  const palletFee = quote.palletFee || 0
+  const boxFee = quote.boxFee || 0
+  const wmsFee = quote.wmsFee || 0
+  
+  return storageFee + palletFee + boxFee + wmsFee
+}
+
+// 견적 비교하기 페이지로 이동
+const compareQuotes = () => {
+  if (selectedRequest.value) {
+    const route = useRouter()
+    route.push(`/customer/compare-quotes?requestId=${selectedRequest.value.id}`)
   }
 }
 </script>

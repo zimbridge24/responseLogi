@@ -1,0 +1,32 @@
+[33mcommit e2dab954eab393f31cc8f65010d824298e03da2c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: User <user@example.com>
+Date:   Thu Sep 25 15:58:44 2025 +0900
+
+    functions 배포전 (Firebase Functions v4 다운그레이드, TypeScript 설정 완화, 웹푸시 로직 수정, auth 미들웨어 강화, FCM 토큰 디버깅 로그 추가, 견적 신청 디버깅 로그 추가, 로그인 상태 유지 문제 해결, app.vue 추가)
+
+ app.vue                             |    27 [32m+[m
+ functions/index.ts                  |   235 [31m-[m
+ functions/package-lock.json         | 10484 [32m+++++++[m[31m---------------------------[m
+ functions/package.json              |    10 [32m+[m[31m-[m
+ functions/src/index.ts              |   161 [32m+[m[31m-[m
+ functions/tsconfig.json             |    12 [32m+[m[31m-[m
+ lib/services/firestore.ts           |   109 [32m+[m[31m-[m
+ middleware/auth.global.ts           |    44 [32m+[m[31m-[m
+ nuxt.config.ts                      |     8 [32m+[m
+ pages/chat/[chatId].vue             |   155 [32m+[m[31m-[m
+ pages/customer/completed-quotes.vue |    21 [32m+[m[31m-[m
+ pages/customer/requests.vue         |   100 [32m+[m[31m-[m
+ pages/index.vue                     |   280 [32m+[m[31m-[m
+ pages/partner/bids.vue              |     2 [32m+[m[31m-[m
+ pages/partner/completed-quotes.vue  |     5 [32m+[m[31m-[m
+ pages/partner/index.vue             |   185 [32m+[m[31m-[m
+ pages/partner/my-quotes.vue         |    47 [32m+[m[31m-[m
+ pages/partner/pending.vue           |     4 [32m+[m[31m-[m
+ pages/partner/quote/[id].vue        |    49 [32m+[m[31m-[m
+ pages/partner/rejected.vue          |     2 [32m+[m[31m-[m
+ pages/partner/requests.vue          |   389 [31m--[m
+ pages/request.vue                   |   296 [32m+[m[31m-[m
+ pages/request.vue.backup            |   406 [32m++[m
+ plugins/fcm.client.ts               |    90 [32m+[m[31m-[m
+ stores/user.ts                      |     8 [32m+[m[31m-[m
+ 25 files changed, 3591 insertions(+), 9538 deletions(-)

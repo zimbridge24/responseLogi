@@ -8,133 +8,85 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
-      <div class="flex items-center space-x-3">
-        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-            <span class="text-white text-xl">📦</span>
+    <nav class="relative z-10 flex justify-between items-center px-4 sm:px-8 py-4 sm:py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <NuxtLink to="/" class="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white text-lg sm:text-xl">📦</span>
           </div>
-          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            응답하라 창고
+          <span class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <span class="hidden sm:inline">응답하라 창고</span>
+            <span class="sm:hidden">응답하라</span>
           </span>
         </NuxtLink>
       </div>
-      <div class="flex items-center space-x-8">
-        <!-- 로그인되지 않은 경우 -->
-        <template v-if="!user.isLoggedIn">
-          <div class="flex items-center space-x-4">
-            <div class="relative group">
-              <button class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200">
-                로그인
-              </button>
-              <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <NuxtLink 
-                  to="/customer/login" 
-                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
-                >
-                  고객 로그인
-                </NuxtLink>
-                <NuxtLink 
-                  to="/login" 
-                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
-                >
-                  파트너 로그인
-                </NuxtLink>
-              </div>
-            </div>
-          </div>
-          <div class="w-px h-6 bg-gray-300"></div>
-          <div class="flex items-center space-x-4">
-            <div class="relative group">
-              <button class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200">
-                회원가입
-              </button>
-              <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <NuxtLink 
-                  to="/customer/register" 
-                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
-                >
-                  고객 회원가입
-                </NuxtLink>
-                <NuxtLink 
-                  to="/partner/register" 
-                  class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
-                >
-                  파트너 회원가입
-                </NuxtLink>
-              </div>
-            </div>
-          </div>
-        </template>
-        
+      <div class="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
         <!-- 로그인된 경우 -->
-        <template v-else>
-          <div class="text-gray-800 font-semibold text-lg">
-            {{ user.role === 'customer' ? '고객' : user.role === 'partner' ? '파트너' : '사용자' }}님
+        <template v-if="user.isLoggedIn">
+          <!-- 디버깅용: 사용자 정보 출력 -->
+          <div v-if="process.dev" class="text-xs text-red-500 mr-4">
+            Debug: {{ user.role }} | {{ user.profile?.name }}
           </div>
-          <div class="w-px h-6 bg-gray-300"></div>
-          
-          <!-- 역할이 없는 경우 (회원가입 미완료) -->
-          <template v-if="!user.role">
-            <NuxtLink 
-              to="/partner/register" 
-              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-            >
-              회원가입 완료하기
-            </NuxtLink>
-            <div class="w-px h-6 bg-gray-300"></div>
-          </template>
           
           <!-- 고객인 경우 신청한 견적 버튼 표시 -->
           <NuxtLink 
             v-if="user.role === 'customer'"
             to="/customer/requests" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full text-center"
           >
-            신청한 견적
+            <span class="hidden sm:inline">신청한<br>견적</span>
+            <span class="sm:hidden">견적</span>
           </NuxtLink>
+          
           <!-- 파트너인 경우 네비게이션 -->
           <template v-if="user.role === 'partner'">
             <NuxtLink 
               to="/partner/my-quotes" 
-              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
             >
-              내가 보낸 견적서
+              <span class="hidden sm:inline">내가 보낸 견적서</span>
+              <span class="sm:hidden">견적서</span>
             </NuxtLink>
-            <div class="w-px h-6 bg-gray-300"></div>
+            <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
             <NuxtLink 
               to="/partner/completed-quotes" 
-              class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
             >
-              확정견적
+              <span class="hidden sm:inline">확정견적</span>
+              <span class="sm:hidden">확정</span>
             </NuxtLink>
           </template>
-          <!-- 고객인 경우 완료된 견적 버튼 표시 -->
-          <NuxtLink 
-            v-if="user.role === 'customer'"
-            to="/customer/completed-quotes" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
-          >
-            완료된 견적
-          </NuxtLink>
-          <div class="w-px h-6 bg-gray-300"></div>
+          
+          <!-- 고객인 경우 세로선과 완료된 견적 버튼 표시 -->
+          <template v-if="user.role === 'customer'">
+            <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
+            <NuxtLink 
+              to="/customer/completed-quotes" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full text-center"
+            >
+              <span class="hidden sm:inline">수락한<br>견적</span>
+              <span class="sm:hidden">완료</span>
+            </NuxtLink>
+          </template>
+          <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
+          
           <!-- 채팅 버튼 (모든 로그인된 사용자) -->
           <NuxtLink 
             to="/chat-list" 
             @click="calculateUnreadChatCount"
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full flex items-center"
+            class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full flex items-center"
           >
             채팅
-            <span v-if="unreadChatCount > 0" class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white">
+            <span v-if="unreadChatCount > 0" class="ml-1 sm:ml-2 inline-flex items-center px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-bold bg-red-500 text-white">
               {{ unreadChatCount > 99 ? '99+' : unreadChatCount }}
             </span>
           </NuxtLink>
-          <div class="w-px h-6 bg-gray-300"></div>
+          <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
           <button 
             @click="handleLogout"
-            class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+            class="text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
           >
-            로그아웃
+            LogOut
           </button>
         </template>
       </div>
@@ -172,8 +124,25 @@
           </div>
           
           <div class="text-center mb-6">
-            <p class="text-lg text-gray-600 mb-4">빠르고 정확한 견적을 받아보세요!</p>
-            <p class="text-sm text-gray-500">간편한 전화번호 인증으로 시작하세요</p>
+            <p class="text-lg text-gray-600 mb-4">10초만에 견적을 신청해보세요!</p>
+          </div>
+          
+          <!-- 로그인 버튼들 -->
+          <div class="text-center mb-6">
+            <div class="flex space-x-4 justify-center">
+              <NuxtLink 
+                to="/customer/login" 
+                class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                고객 로그인
+              </NuxtLink>
+              <NuxtLink 
+                to="/login" 
+                class="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"
+              >
+                업체 로그인
+              </NuxtLink>
+            </div>
           </div>
           
           <!-- 회원가입 버튼들 -->
@@ -191,7 +160,7 @@
                 to="/partner/register" 
                 class="text-green-600 hover:text-green-800 font-semibold transition-colors"
               >
-                파트너 회원가입
+                업체 회원가입
               </NuxtLink>
             </div>
           </div>
@@ -382,6 +351,7 @@ const user = useUserStore()
 
 // Initialize auth listener
 user.initializeAuth()
+
 
 // 읽지 않은 메시지 수
 const unreadChatCount = ref(0)

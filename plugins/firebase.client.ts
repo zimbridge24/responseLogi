@@ -52,6 +52,22 @@ export default defineNuxtPlugin({
       firebaseFunctions = getFunctions(firebaseApp, 'us-central1')
       firebaseStorage = getStorage(firebaseApp)
 
+      // Firestore 연결 안정성 개선
+      if (firebaseDb && firebaseDb._delegate) {
+        try {
+          // Firestore 설정 개선 (안전하게 처리)
+          const currentSettings = firebaseDb._delegate._settings || {}
+          firebaseDb._delegate._settings = {
+            ...currentSettings,
+            ignoreUndefinedProperties: true,
+            cacheSizeBytes: 40 * 1024 * 1024, // 40MB 캐시
+          }
+          console.log('Firestore settings optimized')
+        } catch (error) {
+          console.warn('Firestore settings optimization failed:', error)
+        }
+      }
+
       console.log('Firebase services initialized:', {
         auth: !!firebaseAuth,
         db: !!firebaseDb,
@@ -110,29 +126,37 @@ export default defineNuxtPlugin({
 
       // Nuxt 앱에 Firebase 서비스들 제공 (안전한 방법)
       try {
-        if (!nuxtApp.$firebase) {
+        if (firebaseApp && !nuxtApp.$firebase) {
           nuxtApp.$firebase = firebaseApp
         }
-        if (!nuxtApp.$auth) {
+        if (firebaseAuth && !nuxtApp.$auth) {
           nuxtApp.$auth = firebaseAuth
         }
-        if (!nuxtApp.$db) {
+        if (firebaseDb && !nuxtApp.$db) {
           nuxtApp.$db = firebaseDb
         }
-        if (!nuxtApp.$functions) {
+        if (firebaseFunctions && !nuxtApp.$functions) {
           nuxtApp.$functions = firebaseFunctions
         }
-        if (!nuxtApp.$storage) {
+        if (firebaseStorage && !nuxtApp.$storage) {
           nuxtApp.$storage = firebaseStorage
         }
-        if (!nuxtApp.$analytics) {
+        if (firebaseAnalytics && !nuxtApp.$analytics) {
           nuxtApp.$analytics = firebaseAnalytics
         }
         if (!nuxtApp.$RecaptchaVerifier) {
           nuxtApp.$RecaptchaVerifier = RecaptchaVerifier
         }
         
-        console.log('Firebase services provided to Nuxt app')
+        console.log('Firebase services provided to Nuxt app:', {
+          firebase: !!nuxtApp.$firebase,
+          auth: !!nuxtApp.$auth,
+          db: !!nuxtApp.$db,
+          functions: !!nuxtApp.$functions,
+          storage: !!nuxtApp.$storage,
+          analytics: !!nuxtApp.$analytics,
+          recaptcha: !!nuxtApp.$RecaptchaVerifier
+        })
       } catch (error) {
         console.error('Error providing Firebase services:', error)
       }

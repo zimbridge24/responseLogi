@@ -8,27 +8,50 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="relative z-10 flex justify-between items-center px-8 py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
-      <div class="flex items-center space-x-3">
-        <NuxtLink to="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-            <span class="text-white text-xl">📦</span>
+    <nav class="relative z-10 flex justify-between items-center px-4 sm:px-8 py-4 sm:py-6 backdrop-blur-sm bg-white/80 border-b border-white/20">
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <NuxtLink to="/" class="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white text-lg sm:text-xl">📦</span>
           </div>
-          <span class="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            응답하라 창고
+          <span class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <span class="hidden sm:inline">응답하라 창고</span>
+            <span class="sm:hidden">응답하라</span>
           </span>
         </NuxtLink>
       </div>
-      <div class="flex items-center space-x-8">
-        <div class="text-gray-800 font-semibold text-lg">
-          {{ user.user?.name || '사용자' }}님 (파트너)
-        </div>
-        <div class="w-px h-6 bg-gray-300"></div>
+      <div class="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
+        <!-- 파트너 네비게이션 -->
+        <NuxtLink 
+          to="/partner/my-quotes" 
+          class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+        >
+          <span class="hidden sm:inline">내가 보낸 견적서</span>
+          <span class="sm:hidden">견적서</span>
+        </NuxtLink>
+        <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
+        <NuxtLink 
+          to="/partner/completed-quotes" 
+          class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+        >
+          <span class="hidden sm:inline">확정견적</span>
+          <span class="sm:hidden">확정</span>
+        </NuxtLink>
+        <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
+        
+        <!-- 채팅 버튼 -->
+        <NuxtLink 
+          to="/chat-list" 
+          class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full flex items-center"
+        >
+          채팅
+        </NuxtLink>
+        <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
         <button 
           @click="handleLogout"
-          class="text-gray-800 hover:text-gray-900 font-semibold text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
+          class="text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full"
         >
-          로그아웃
+          LogOut
         </button>
       </div>
     </nav>
@@ -54,14 +77,6 @@
             </NuxtLink>
           </div>
 
-          <!-- 고객 정보 -->
-          <div class="bg-blue-50 rounded-xl p-6 mb-6">
-            <h2 class="text-xl font-semibold text-blue-900 mb-4">고객 정보</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><span class="font-medium text-blue-800">담당자:</span> {{ request.customerName }}</div>
-              <div><span class="font-medium text-blue-800">연락처:</span> {{ request.customerPhone }}</div>
-            </div>
-          </div>
 
           <!-- 견적 요구사항 -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -119,7 +134,7 @@
 
         <!-- 견적 응답 폼 -->
         <div v-if="request && request.currentQuoteCount < 7" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6">견적 응답 작성</h2>
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">견적서 작성</h2>
 
           <form @submit.prevent="submitQuote" class="space-y-6">
             <!-- 비용 정보 섹션 -->
@@ -469,15 +484,28 @@ const submitQuote = async () => {
 
     // 견적 신청서의 currentQuoteCount 증가
     if (request.value) {
-      await firestoreService.incrementQuoteCount(requestId)
+      try {
+        await firestoreService.incrementQuoteCount(requestId)
+      } catch (countError) {
+        console.warn('견적 카운트 증가 실패 (견적서는 이미 저장됨):', countError)
+        // 견적서는 이미 저장되었으므로 계속 진행
+      }
     }
 
     // 견적 제출 성공 후 자동으로 홈으로 이동
     console.log('견적이 성공적으로 제출되었습니다!')
     await navigateTo('/partner')
-  } catch (error) {
+  } catch (error: any) {
     console.error('견적 응답 제출 실패:', error)
-    errorMessage.value = '견적 제출에 실패했습니다. 다시 시도해주세요.'
+    
+    // WebChannel 연결 에러인 경우 사용자에게 다른 메시지 표시
+    if (error.message?.includes('WebChannel') || error.message?.includes('transport errored')) {
+      errorMessage.value = '네트워크 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.'
+    } else if (error.code === 'permission-denied') {
+      errorMessage.value = '권한이 없습니다. 관리자에게 문의하세요.'
+    } else {
+      errorMessage.value = '견적 제출에 실패했습니다. 다시 시도해주세요.'
+    }
   } finally {
     submitting.value = false
   }

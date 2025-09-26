@@ -37,7 +37,41 @@ export default defineNuxtConfig({
   security: {
     headers: {
       contentSecurityPolicy: {
-        'frame-ancestors': ["'self'", "https://www.google.com", "https://www.gstatic.com"]
+        'script-src': [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          "https://www.google.com",
+          "https://www.gstatic.com",
+          "https://www.recaptcha.net"
+        ],
+        'frame-src': [
+          "'self'",
+          "https://www.google.com",
+          "https://www.gstatic.com",
+          "https://www.recaptcha.net"
+        ],
+        'frame-ancestors': [
+          "'self'",
+          "https://www.google.com",
+          "https://www.gstatic.com",
+          "https://www.recaptcha.net"
+        ],
+        'connect-src': [
+          "'self'",
+          "https://www.google.com",
+          "https://www.gstatic.com",
+          "https://www.recaptcha.net",
+          "https://firestore.googleapis.com",
+          "https://identitytoolkit.googleapis.com",
+          "https://securetoken.googleapis.com"
+        ],
+        'style-src': [
+          "'self'",
+          "'unsafe-inline'",
+          "https://www.google.com",
+          "https://www.gstatic.com"
+        ]
       }
     }
   }

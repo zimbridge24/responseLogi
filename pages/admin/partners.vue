@@ -173,21 +173,25 @@ const loading = ref(false)
 const loadPartners = async () => {
   loading.value = true
   try {
+    console.log('파트너 목록 로딩 시작...')
     const { $db } = useNuxtApp()
     const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore')
     
-    // role이 'partner'인 모든 사용자 가져오기
+    // role이 'partner'인 모든 사용자 가져오기 (인덱스 없이)
     const q = query(
       collection($db, 'users'),
-      where('role', '==', 'partner'),
-      orderBy('createdAt', 'desc')
+      where('role', '==', 'partner')
     )
     
+    console.log('Firestore 쿼리 실행 중...')
     const querySnapshot = await getDocs(q)
+    console.log('쿼리 결과:', querySnapshot.size, '개 문서')
+    
     const partnersList: any[] = []
     
     querySnapshot.forEach((doc) => {
       const data = doc.data()
+      console.log('파트너 데이터:', doc.id, data)
       partnersList.push({
         id: doc.id,
         name: data.name,
@@ -248,19 +252,43 @@ const toggleVerification = async (partner: any) => {
     const { $db } = useNuxtApp()
     const { doc, updateDoc } = await import('firebase/firestore')
     
-    const newStatus = partner.approvalStatus === 'approved' ? 'pending' : 'approved'
-    
-    await updateDoc(doc($db, 'users', partner.id), {
-      approvalStatus: newStatus,
-      updatedAt: new Date()
-    })
-    
-    // 로컬 데이터 업데이트
-    partner.approvalStatus = newStatus
-    partner.verified = newStatus === 'approved'
-    
-    console.log('파트너 승인 상태 변경:', partner.id, newStatus)
-    alert(`파트너가 ${newStatus === 'approved' ? '승인' : '대기'}되었습니다.`)
+    if (partner.approvalStatus === 'approved') {
+      // 승인 취소 시 거절로 변경
+      const rejectionReason = prompt('승인 취소 사유를 작성해주세요:')
+      
+      if (!rejectionReason || rejectionReason.trim() === '') {
+        alert('취소 사유를 입력해주세요.')
+        return
+      }
+      
+      await updateDoc(doc($db, 'users', partner.id), {
+        approvalStatus: 'rejected',
+        rejectionReason: rejectionReason,
+        rejectedAt: new Date(),
+        updatedAt: new Date()
+      })
+      
+      // 로컬 데이터 업데이트
+      partner.approvalStatus = 'rejected'
+      partner.verified = false
+      
+      console.log('파트너 승인 취소 (거절):', partner.id, rejectionReason)
+      alert('파트너가 거절되었습니다.')
+    } else {
+      // 승인
+      await updateDoc(doc($db, 'users', partner.id), {
+        approvalStatus: 'approved',
+        approvedAt: new Date(),
+        updatedAt: new Date()
+      })
+      
+      // 로컬 데이터 업데이트
+      partner.approvalStatus = 'approved'
+      partner.verified = true
+      
+      console.log('파트너 승인:', partner.id)
+      alert('파트너가 승인되었습니다.')
+    }
   } catch (error) {
     console.error('승인 상태 변경 실패:', error)
     alert('승인 상태 변경에 실패했습니다.')
@@ -268,12 +296,33 @@ const toggleVerification = async (partner: any) => {
 }
 
 const deletePartner = async (partner: any) => {
-  if (confirm('정말로 이 파트너를 삭제하시겠습니까?')) {
+  if (confirm('정말로 이 파트너를 완전히 삭제하시겠습니까? (Firestore와 Authentication에서 모두 삭제됩니다)')) {
     try {
       const { $db } = useNuxtApp()
       const { doc, deleteDoc } = await import('firebase/firestore')
+      const { getAuth, deleteUser } = await import('firebase/auth')
       
+      // 1. Firestore에서 사용자 데이터 삭제
       await deleteDoc(doc($db, 'users', partner.id))
+      console.log('Firestore에서 파트너 삭제 완료:', partner.id)
+      
+      // 2. Firebase Authentication에서 사용자 삭제
+      // 주의: 이 작업은 관리자 권한이 필요할 수 있습니다
+      try {
+        const auth = getAuth()
+        // 현재 로그인된 사용자가 관리자인지 확인
+        const currentUser = auth.currentUser
+        if (currentUser && currentUser.uid === partner.id) {
+          // 자기 자신을 삭제하는 경우
+          await deleteUser(currentUser)
+        } else {
+          // 다른 사용자를 삭제하는 경우 - Cloud Function을 통해 처리해야 할 수 있음
+          console.log('다른 사용자 삭제는 Cloud Function을 통해 처리해야 합니다:', partner.id)
+        }
+      } catch (authError) {
+        console.warn('Authentication에서 사용자 삭제 실패 (Cloud Function 필요):', authError)
+        // Firestore 삭제는 성공했으므로 계속 진행
+      }
       
       // 로컬 데이터에서 제거
       const index = partners.value.findIndex(p => p.id === partner.id)

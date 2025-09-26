@@ -325,6 +325,23 @@ export const useUserStore = defineStore('user', () => {
     console.log('사용자 설정 완료:', userData.name, '역할:', userData.role)
   }
 
+  // 사용자 프로필 다시 로드
+  const loadUserProfile = async () => {
+    if (currentUser.value?.uid) {
+      try {
+        const service = getFirestoreService()
+        userProfile.value = await service.getUser(currentUser.value.uid)
+        role.value = userProfile.value?.role || null
+        console.log('User profile reloaded:', {
+          role: role.value,
+          profile: userProfile.value
+        })
+      } catch (error) {
+        console.error('Error reloading user profile:', error)
+      }
+    }
+  }
+
   return {
     currentUser,
     userProfile,
@@ -346,6 +363,7 @@ export const useUserStore = defineStore('user', () => {
     initializeFCM,
     setAdminUser,
     setUser,
+    loadUserProfile,
     authReady
   }
 })

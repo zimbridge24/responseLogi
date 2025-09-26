@@ -237,11 +237,6 @@ const formatPhoneNumber = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/\D/g, '') // 숫자가 아닌 문자 제거
   
-  // 010으로 시작하지 않으면 010 추가
-  if (value.length > 0 && !value.startsWith('010')) {
-    value = '010' + value
-  }
-  
   // 최대 11자리로 제한
   if (value.length > 11) {
     value = value.substring(0, 11)
@@ -455,6 +450,29 @@ const handleSubmit = async () => {
       throw new Error('인증된 사용자 정보를 찾을 수 없습니다.')
     }
 
+    // 전화번호로 기존 사용자 확인
+    const usersRef = collection($db, 'users')
+    const q = query(usersRef, where('phone', '==', formData.value.phone))
+    const querySnapshot = await getDocs(q)
+    
+    if (!querySnapshot.empty) {
+      // 이미 등록된 전화번호가 있는 경우
+      const shouldLogin = confirm('이미 회원가입이 완료된 이용자입니다. 로그인 페이지로 가시겠습니까?')
+      
+      if (shouldLogin) {
+        // 파트너 로그인 페이지로 이동
+        await router.push('/login')
+      } else {
+        // 기존 페이지에서 전화번호를 다시 입력하도록 폼 초기화
+        formData.value.phone = ''
+        formData.value.verificationCode = ''
+        verificationSent.value = false
+        codeVerified.value = false
+        error.value = '다른 전화번호를 입력해주세요.'
+      }
+      return
+    }
+
     // 파일들을 Firestore에 저장 (Base64 인코딩)
     const userId = currentUser.uid
     console.log('파일 처리 시작 - 사용자 ID:', userId)
@@ -504,13 +522,25 @@ const handleSubmit = async () => {
     
     console.log('파트너 회원가입 완료:', currentUser.uid)
     
-    // 파트너 승인 대기 페이지로 리다이렉트
-    console.log('파트너 회원가입 성공, 승인 대기 페이지로 이동')
-    await router.push('/partner/pending')
+    // 로그아웃 후 로그인 페이지로 리다이렉트
+    const { getAuth, signOut } = await import('firebase/auth')
+    const auth = getAuth()
+    await signOut(auth)
+    await router.push('/login')
     
   } catch (err: any) {
     console.error('회원가입 실패:', err)
     error.value = '회원가입에 실패했습니다. 다시 시도해주세요.'
+    
+    // 회원가입 실패 시 완전히 로그아웃하고 메인 화면으로 이동
+    try {
+      const { getAuth, signOut } = await import('firebase/auth')
+      const auth = getAuth()
+      await signOut(auth)
+      await router.push('/')
+    } catch (logoutError) {
+      console.error('로그아웃 실패:', logoutError)
+    }
   } finally {
     loading.value = false
   }

@@ -501,18 +501,40 @@ export class FirestoreService {
 
   // Warehouse Quote operations (창고 견적 응답)
   async createWarehouseQuote(quoteData: Omit<WarehouseQuote, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    try {
-      const now = new Date()
-      const docRef = await addDoc(collection(this.db, 'warehouseQuotes'), {
-        ...quoteData,
-        createdAt: now,
-        updatedAt: now
-      })
-      return docRef.id
-    } catch (error) {
-      console.error('Error creating warehouse quote:', error)
-      throw error
+    const maxRetries = 3
+    let lastError: any
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const now = new Date()
+        const docRef = await addDoc(collection(this.db, 'warehouseQuotes'), {
+          ...quoteData,
+          createdAt: now,
+          updatedAt: now
+        })
+        console.log(`견적서 생성 성공 (시도 ${attempt}/${maxRetries}):`, docRef.id)
+        return docRef.id
+      } catch (error: any) {
+        lastError = error
+        console.warn(`견적서 생성 실패 (시도 ${attempt}/${maxRetries}):`, error.message)
+        
+        // WebChannel 연결 에러인 경우 재시도
+        if (error.code === 'unavailable' || error.message?.includes('WebChannel') || error.message?.includes('transport errored')) {
+          if (attempt < maxRetries) {
+            console.log(`${attempt * 1000}ms 후 재시도...`)
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000))
+            continue
+          }
+        }
+        
+        // 다른 에러는 즉시 throw
+        throw error
+      }
     }
+    
+    // 모든 재시도 실패
+    console.error('Error creating warehouse quote after all retries:', lastError)
+    throw lastError
   }
 
   async getWarehouseQuote(quoteId: string): Promise<WarehouseQuote | null> {

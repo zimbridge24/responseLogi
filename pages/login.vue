@@ -57,8 +57,8 @@
             <button
               type="button"
               @click="sendVerificationCode"
-              :disabled="loading || !validatePhoneNumber(formData.phone)"
-              class="btn-primary w-full flex justify-center items-center py-4 px-6 text-lg font-semibold bg-green-600 hover:bg-green-700"
+              :disabled="loading || !validatePhoneNumber(formData.phone) || !firebaseReady"
+              class="btn-primary w-full flex justify-center items-center py-4 px-6 text-lg font-semibold bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg v-if="loading" class="loading-spinner -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -83,6 +83,18 @@
             </button>
           </div>
 
+          <!-- Firebase Loading Message -->
+          <div v-if="!firebaseReady && !error" class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div class="flex">
+              <svg class="h-5 w-5 text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <div class="ml-3">
+                <p class="text-sm text-blue-800 font-medium">Firebase 초기화 중...</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Error Message -->
           <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-4">
             <div class="flex">
@@ -104,13 +116,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { signInWithPhoneNumber, PhoneAuthProvider, signInWithCredential } from 'firebase/auth'
 import { doc, getFirestore, getDoc } from 'firebase/firestore'
 
-const { $auth, $db, $RecaptchaVerifier } = useNuxtApp()
+const nuxtApp = useNuxtApp()
 const userStore = useUserStore()
 const router = useRouter()
+
+// Firebase 인스턴스들을 안전하게 가져오기
+const $auth = nuxtApp.$auth
+const $db = nuxtApp.$db
+const $RecaptchaVerifier = nuxtApp.$RecaptchaVerifier
 
 const formData = ref({
   phone: '',
@@ -122,6 +139,7 @@ const error = ref('')
 const verificationSent = ref(false)
 const confirmationResult = ref<any>(null)
 const recaptchaVerifier = ref<any>(null)
+const firebaseReady = ref(false)
 
 const validatePhoneNumber = (phone: string) => {
   const phoneRegex = /^010\d{8}$/
@@ -132,9 +150,7 @@ const formatPhoneNumber = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/\D/g, '')
   
-  if (value.length > 0 && !value.startsWith('010')) {
-    value = '010' + value
-  }
+  // 010 자동 추가 로직 제거 - 사용자가 직접 입력하도록 함
   
   if (value.length > 11) {
     value = value.substring(0, 11)
@@ -144,31 +160,71 @@ const formatPhoneNumber = (event: Event) => {
   target.value = value
 }
 
-// reCAPTCHA 초기화
+// reCAPTCHA 초기화 (완전 정리 후 재생성)
 const initializeRecaptcha = async () => {
-  if (recaptchaVerifier.value) {
-    return recaptchaVerifier.value
-  }
+  if (!process.client) return null
 
-  if (!$auth) {
+  const authInstance = nuxtApp.$auth || $auth
+  const RecaptchaVerifierClass = nuxtApp.$RecaptchaVerifier || $RecaptchaVerifier
+  
+  if (!authInstance) {
     throw new Error('Firebase auth not initialized')
   }
   
-  const container = document.getElementById('recaptcha-container')
-  if (container) {
-    container.innerHTML = ''
+  if (!RecaptchaVerifierClass) {
+    throw new Error('reCAPTCHA verifier not available')
   }
-  
-  recaptchaVerifier.value = new $RecaptchaVerifier($auth, 'recaptcha-container', {
-    size: 'invisible',
-    callback: () => {
-      console.log('reCAPTCHA solved')
+
+  // 기존 reCAPTCHA 완전 정리
+  if (recaptchaVerifier.value) {
+    try {
+      recaptchaVerifier.value.clear()
+    } catch (e) {
+      console.warn('reCAPTCHA clear failed:', e)
     }
-  })
-  
-  await recaptchaVerifier.value.render()
-  
-  return recaptchaVerifier.value
+    recaptchaVerifier.value = null
+  }
+
+  // 기존 컨테이너 제거
+  const existingContainer = document.getElementById('recaptcha-container')
+  if (existingContainer) {
+    existingContainer.remove()
+  }
+
+  // 새로운 컨테이너 생성
+  const container = document.createElement('div')
+  container.id = 'recaptcha-container'
+  container.style.position = 'fixed'
+  container.style.left = '-9999px'
+  container.style.top = '0'
+  container.style.width = '1px'
+  container.style.height = '1px'
+  container.style.overflow = 'hidden'
+  document.body.appendChild(container)
+
+  // 잠시 대기 후 reCAPTCHA 생성
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  try {
+    recaptchaVerifier.value = new RecaptchaVerifierClass(authInstance, container, {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA solved')
+      }
+    })
+
+    await recaptchaVerifier.value.render()
+    console.log('reCAPTCHA initialized successfully')
+    
+    return recaptchaVerifier.value
+  } catch (error) {
+    console.error('reCAPTCHA initialization failed:', error)
+    // 실패 시 컨테이너 정리
+    try {
+      container.remove()
+    } catch (e) {}
+    throw error
+  }
 }
 
 const sendVerificationCode = async () => {
@@ -177,12 +233,22 @@ const sendVerificationCode = async () => {
     return
   }
 
+  if (!firebaseReady.value) {
+    error.value = 'Firebase가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.'
+    return
+  }
+
   loading.value = true
   error.value = ''
 
   try {
-    if (!$auth) {
-      throw new Error('Firebase auth not initialized')
+    
+    const authInstance = nuxtApp.$auth || $auth
+    const dbInstance = nuxtApp.$db || $db
+    const recaptchaVerifier = nuxtApp.$RecaptchaVerifier || $RecaptchaVerifier
+    
+    if (!authInstance || !dbInstance || !recaptchaVerifier) {
+      throw new Error('Firebase services not properly initialized')
     }
     
     const verifier = await initializeRecaptcha()
@@ -190,7 +256,7 @@ const sendVerificationCode = async () => {
     const phoneNumber = '+82' + formData.value.phone.substring(1)
     
     console.log('인증번호 전송 시도:', phoneNumber)
-    confirmationResult.value = await signInWithPhoneNumber($auth, phoneNumber, verifier)
+    confirmationResult.value = await signInWithPhoneNumber(authInstance, phoneNumber, verifier)
     
     verificationSent.value = true
     console.log('인증번호 전송 성공')
@@ -229,18 +295,25 @@ const verifyCode = async () => {
       formData.value.verificationCode
     )
 
-    const result = await signInWithCredential($auth, credential)
+    const authInstance = nuxtApp.$auth || $auth
+    const dbInstance = nuxtApp.$db || $db
+    
+    if (!authInstance || !dbInstance) {
+      throw new Error('Firebase services not properly initialized')
+    }
+    
+    const result = await signInWithCredential(authInstance, credential)
     console.log('인증 성공:', result.user)
 
     // Firestore에서 사용자 정보 확인
-    const userDoc = await getDoc(doc($db, 'users', result.user.uid))
+    const userDoc = await getDoc(doc(dbInstance, 'users', result.user.uid))
     
     if (userDoc.exists()) {
       const userData = userDoc.data()
       
       // 파트너 역할인지 확인
       if (userData.role !== 'partner') {
-        await $auth.signOut()
+        await authInstance.signOut()
         error.value = '파트너 계정이 아닙니다. 고객 로그인을 이용해주세요.'
         return
       }
@@ -261,8 +334,22 @@ const verifyCode = async () => {
         router.push('/partner')
       }
     } else {
-      await $auth.signOut()
-      error.value = '등록되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.'
+      // 등록되지 않은 계정인 경우
+      await authInstance.signOut()
+      
+      // 확인 메시지 표시
+      const shouldRegister = confirm('가입하지 않은 이용자입니다. 회원가입 페이지로 가시겠습니까?')
+      
+      if (shouldRegister) {
+        // 파트너 회원가입 페이지로 이동
+        await router.push('/partner/register')
+      } else {
+        // 기존 페이지에서 전화번호를 다시 입력하도록 폼 초기화
+        formData.value.phone = ''
+        formData.value.verificationCode = ''
+        verificationSent.value = false
+        error.value = '다시 전화번호를 입력해주세요.'
+      }
     }
   } catch (err: any) {
     console.error('인증 실패:', err)
@@ -285,4 +372,63 @@ const handleSubmit = async () => {
     await verifyCode()
   }
 }
+
+// Firebase 초기화 확인
+onMounted(async () => {
+  console.log('Login page mounted, checking Firebase initialization...')
+  
+  // Firebase 초기화 대기 (최대 5초)
+  let attempts = 0
+  const maxAttempts = 50 // 5초 (100ms * 50)
+  
+  while (attempts < maxAttempts && !firebaseReady.value) {
+    const authInstance = nuxtApp.$auth
+    const dbInstance = nuxtApp.$db
+    const recaptchaVerifier = nuxtApp.$RecaptchaVerifier
+    
+    if (authInstance && dbInstance && recaptchaVerifier) {
+      firebaseReady.value = true
+      console.log('Firebase services ready:', {
+        auth: !!authInstance,
+        db: !!dbInstance,
+        recaptcha: !!recaptchaVerifier
+      })
+      break
+    }
+    
+    console.log(`Firebase not ready yet, attempt ${attempts + 1}/${maxAttempts}`)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    attempts++
+  }
+  
+  if (!firebaseReady.value) {
+    console.error('Firebase initialization timeout')
+    error.value = 'Firebase 초기화에 실패했습니다. 페이지를 새로고침해주세요.'
+  }
+})
+
+// 컴포넌트 언마운트 시 reCAPTCHA 정리
+onUnmounted(() => {
+  // reCAPTCHA 인스턴스 정리
+  if (recaptchaVerifier.value) {
+    try {
+      recaptchaVerifier.value.clear()
+      console.log('reCAPTCHA cleared on unmount')
+    } catch (error) {
+      console.warn('reCAPTCHA 정리 중 오류:', error)
+    }
+    recaptchaVerifier.value = null
+  }
+  
+  // reCAPTCHA 컨테이너 완전 제거
+  const container = document.getElementById('recaptcha-container')
+  if (container) {
+    try {
+      container.remove()
+      console.log('reCAPTCHA container removed')
+    } catch (error) {
+      console.warn('컨테이너 제거 중 오류:', error)
+    }
+  }
+})
 </script>

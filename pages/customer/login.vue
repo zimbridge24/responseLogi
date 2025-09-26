@@ -100,15 +100,6 @@
             </button>
           </div>
 
-          <!-- 회원가입 옵션 -->
-          <div v-if="showRegisterOption" class="text-center">
-            <NuxtLink 
-              to="/customer/register" 
-              class="inline-block px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"
-            >
-              고객 회원가입하기
-            </NuxtLink>
-          </div>
         </form>
       </div>
     </div>
@@ -119,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { signInWithPhoneNumber, PhoneAuthProvider, signInWithCredential } from 'firebase/auth'
 
 // 폼 데이터
@@ -133,7 +124,6 @@ const error = ref('')
 const verificationSent = ref(false)
 const confirmationResult = ref<any>(null)
 const recaptchaVerifier = ref<any>(null)
-const showRegisterOption = ref(false)
 
 // 전화번호 형식 검증 (숫자만)
 const validatePhoneNumber = (phone: string) => {
@@ -146,11 +136,6 @@ const formatPhoneNumber = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/\D/g, '') // 숫자가 아닌 문자 제거
   
-  // 010으로 시작하지 않으면 010 추가
-  if (value.length > 0 && !value.startsWith('010')) {
-    value = '010' + value
-  }
-  
   // 최대 11자리로 제한
   if (value.length > 11) {
     value = value.substring(0, 11)
@@ -160,36 +145,72 @@ const formatPhoneNumber = (event: Event) => {
   target.value = value
 }
 
-// reCAPTCHA 초기화
+// reCAPTCHA 초기화 (완전 정리 후 재생성)
 const initializeRecaptcha = async () => {
-  if (recaptchaVerifier.value) {
-    return recaptchaVerifier.value
-  }
+  if (!process.client) return null
 
-  const { $auth, $RecaptchaVerifier } = useNuxtApp()
+  const nuxtApp = useNuxtApp()
+  const authInstance = nuxtApp.$auth
+  const RecaptchaVerifierClass = nuxtApp.$RecaptchaVerifier
   
-  if (!$auth) {
+  if (!authInstance) {
     throw new Error('Firebase auth not initialized')
   }
   
-  // 기존 reCAPTCHA 제거
-  const container = document.getElementById('recaptcha-container')
-  if (container) {
-    container.innerHTML = ''
+  if (!RecaptchaVerifierClass) {
+    throw new Error('reCAPTCHA verifier not available')
   }
-  
-  // reCAPTCHA 설정
-  recaptchaVerifier.value = new $RecaptchaVerifier($auth, 'recaptcha-container', {
-    size: 'invisible',
-    callback: () => {
-      console.log('reCAPTCHA solved')
+
+  // 기존 reCAPTCHA 완전 정리
+  if (recaptchaVerifier.value) {
+    try {
+      recaptchaVerifier.value.clear()
+    } catch (e) {
+      console.warn('reCAPTCHA clear failed:', e)
     }
-  })
-  
-  // reCAPTCHA 렌더링
-  await recaptchaVerifier.value.render()
-  
-  return recaptchaVerifier.value
+    recaptchaVerifier.value = null
+  }
+
+  // 기존 컨테이너 제거
+  const existingContainer = document.getElementById('recaptcha-container')
+  if (existingContainer) {
+    existingContainer.remove()
+  }
+
+  // 새로운 컨테이너 생성
+  const container = document.createElement('div')
+  container.id = 'recaptcha-container'
+  container.style.position = 'fixed'
+  container.style.left = '-9999px'
+  container.style.top = '0'
+  container.style.width = '1px'
+  container.style.height = '1px'
+  container.style.overflow = 'hidden'
+  document.body.appendChild(container)
+
+  // 잠시 대기 후 reCAPTCHA 생성
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  try {
+    recaptchaVerifier.value = new RecaptchaVerifierClass(authInstance, container, {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA solved')
+      }
+    })
+
+    await recaptchaVerifier.value.render()
+    console.log('reCAPTCHA initialized successfully')
+    
+    return recaptchaVerifier.value
+  } catch (error) {
+    console.error('reCAPTCHA initialization failed:', error)
+    // 실패 시 컨테이너 정리
+    try {
+      container.remove()
+    } catch (e) {}
+    throw error
+  }
 }
 
 // 인증번호 전송
@@ -201,7 +222,6 @@ const sendVerificationCode = async () => {
 
   loading.value = true
   error.value = ''
-  showRegisterOption.value = false
 
   try {
     const { $auth } = useNuxtApp()
@@ -276,10 +296,20 @@ const verifyCode = async () => {
     } else {
       // 회원가입이 안된 경우
       await $auth.signOut()
-      error.value = '회원가입을 먼저 진행해주세요. 회원가입하기로 가시겠습니까?'
       
-      // 회원가입 페이지로 이동하는 버튼 표시를 위한 플래그
-      showRegisterOption.value = true
+      // 확인 메시지 표시
+      const shouldRegister = confirm('가입하지 않은 이용자입니다. 회원가입 페이지로 가시겠습니까?')
+      
+      if (shouldRegister) {
+        // 고객 회원가입 페이지로 이동
+        await navigateTo('/customer/register')
+      } else {
+        // 기존 페이지에서 번호를 다시 입력하도록 폼 초기화
+        formData.value.phone = ''
+        formData.value.verificationCode = ''
+        verificationSent.value = false
+        error.value = '다시 전화번호를 입력해주세요.'
+      }
     }
     
   } catch (err: any) {
@@ -304,6 +334,31 @@ const handleSubmit = async () => {
     await verifyCode()
   }
 }
+
+// 컴포넌트 언마운트 시 reCAPTCHA 정리
+onUnmounted(() => {
+  // reCAPTCHA 인스턴스 정리
+  if (recaptchaVerifier.value) {
+    try {
+      recaptchaVerifier.value.clear()
+      console.log('reCAPTCHA cleared on unmount')
+    } catch (error) {
+      console.warn('reCAPTCHA 정리 중 오류:', error)
+    }
+    recaptchaVerifier.value = null
+  }
+  
+  // reCAPTCHA 컨테이너 완전 제거
+  const container = document.getElementById('recaptcha-container')
+  if (container) {
+    try {
+      container.remove()
+      console.log('reCAPTCHA container removed')
+    } catch (error) {
+      console.warn('컨테이너 제거 중 오류:', error)
+    }
+  }
+})
 </script>
 
 <style scoped>
@@ -312,3 +367,4 @@ const handleSubmit = async () => {
   display: none;
 }
 </style>
+
