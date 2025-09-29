@@ -16,20 +16,16 @@
           </div>
           <div class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
             <span class="hidden sm:inline">응답하라 창고</span>
-            <div class="sm:hidden flex flex-col leading-tight">
+            <div class="sm:hidden flex flex-col leading-tight items-center">
               <span>응답하라</span>
-              <span class="text-sm -mt-1">창고</span>
+              <span>창고</span>
             </div>
           </div>
         </NuxtLink>
       </div>
       <div class="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
         <!-- 로그인된 경우 -->
-        <template v-if="user.isLoggedIn">
-          <!-- 디버깅용: 사용자 정보 출력 -->
-          <div v-if="process.dev" class="text-xs text-red-500 mr-4">
-            Debug: {{ user.role }} | {{ user.profile?.name }}
-          </div>
+        <template v-if="user.isLoggedIn && user.authReady">
           
           <!-- 고객인 경우 신청한 견적 버튼 표시 -->
           <NuxtLink 
@@ -92,6 +88,33 @@
             LogOut
           </button>
         </template>
+        
+        <!-- 로그인되지 않은 경우 -->
+        <template v-else-if="user.authReady">
+          <div class="flex items-center space-x-4">
+            <NuxtLink 
+              to="/customer/login" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200"
+            >
+              고객 로그인
+            </NuxtLink>
+            <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
+            <NuxtLink 
+              to="/login" 
+              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200"
+            >
+              업체 로그인
+            </NuxtLink>
+          </div>
+        </template>
+        
+        <!-- 인증 로딩 중 -->
+        <template v-else>
+          <div class="flex items-center space-x-4">
+            <div class="animate-pulse bg-gray-200 h-6 w-20 rounded"></div>
+            <div class="animate-pulse bg-gray-200 h-6 w-20 rounded"></div>
+          </div>
+        </template>
       </div>
     </nav>
 
@@ -112,10 +135,11 @@
           </span>
         </h1>
         <p class="text-2xl text-gray-600 mb-16 max-w-3xl mx-auto leading-relaxed animate-fade-in-delay">
-          물류창고 견적, 한 번에 쉽고 빠르게
+          물류창고 견적,<br>
+          한 번에 쉽고 빠르게
         </p>
         <!-- 로그인되지 않은 경우 -->
-        <div v-if="!user.isLoggedIn" class="flex flex-col items-center space-y-6 animate-bounce-in">
+        <div v-if="!user.isLoggedIn && user.authReady" class="flex flex-col items-center space-y-6 animate-bounce-in">
           <!-- 큰 견적 신청하기 버튼 -->
           <div class="mb-8">
             <NuxtLink 
@@ -175,7 +199,7 @@
 
 
         <!-- 로그인된 고객인 경우 -->
-        <div v-else-if="user.isLoggedIn && user.role === 'customer'" class="flex flex-col items-center space-y-6 animate-bounce-in">
+        <div v-else-if="user.isLoggedIn && user.role === 'customer' && user.authReady" class="flex flex-col items-center space-y-6 animate-bounce-in">
           <!-- 견적 신청하기 버튼 -->
           <div class="mb-4">
             <NuxtLink 
@@ -197,11 +221,11 @@
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <NuxtLink 
               to="/customer/requests" 
-              class="group relative inline-flex items-center justify-center px-6 py-4 text-base font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+              class="group relative inline-flex items-center justify-center px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
             >
               <span class="relative z-10 flex items-center space-x-2">
                 <span>📋</span>
-                <span class="whitespace-nowrap">신청한 견적 확인</span>
+                <span class="whitespace-nowrap">신청한 견적</span>
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NuxtLink>
@@ -219,7 +243,7 @@
         </div>
 
         <!-- 파트너인 경우 -->
-        <div v-else-if="user.isLoggedIn && user.role === 'partner'" class="w-full max-w-6xl mx-auto">
+        <div v-else-if="user.isLoggedIn && user.role === 'partner' && user.authReady" class="w-full max-w-6xl mx-auto">
           <!-- 승인 대기 중인 파트너 -->
           <div v-if="user.user?.approvalStatus === 'pending'" class="text-center py-16">
             <div class="w-32 h-32 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -336,11 +360,17 @@
         </div>
 
         <!-- 관리자인 경우 -->
-        <div v-else-if="user.isLoggedIn && user.role === 'admin'" class="flex justify-center animate-bounce-in">
+        <div v-else-if="user.isLoggedIn && user.role === 'admin' && user.authReady" class="flex justify-center animate-bounce-in">
           <div class="text-center">
             <p class="text-lg text-gray-600 mb-4">관리자로 로그인하셨습니다.</p>
             <p class="text-sm text-gray-500">관리자 페이지로 이동하세요.</p>
           </div>
+        </div>
+        
+        <!-- 인증 로딩 중 -->
+        <div v-else class="flex flex-col items-center space-y-6">
+          <div class="animate-pulse bg-gray-200 h-8 w-64 rounded mb-4"></div>
+          <div class="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
         </div>
       </div>
 
@@ -349,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { FirestoreService } from '~/lib/services/firestore'
 import { where } from 'firebase/firestore'
 
@@ -358,6 +388,9 @@ const user = useUserStore()
 
 // Initialize auth listener
 user.initializeAuth()
+
+// 개발 모드 확인
+const isDev = computed(() => import.meta.dev)
 
 
 // 읽지 않은 메시지 수

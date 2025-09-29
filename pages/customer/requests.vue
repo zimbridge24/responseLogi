@@ -7,13 +7,13 @@
     <main class="relative z-10 flex flex-col items-center justify-center flex-1 px-8 py-16">
       <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20 max-w-6xl w-full">
         <div class="flex justify-between items-center mb-8">
-          <h1 class="text-4xl font-bold text-gray-900">신청한 견적 확인</h1>
+          <h1 class="text-4xl font-bold text-gray-900">신청한 견적</h1>
           <NuxtLink 
             to="/request" 
-            class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
-            <span class="mr-2">➕</span>
-            새 견적 신청하기
+            <span class="mr-1">+</span>
+            새견적
           </NuxtLink>
         </div>
 
