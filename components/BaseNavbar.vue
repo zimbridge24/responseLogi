@@ -7,14 +7,12 @@
           <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <span class="text-white text-lg sm:text-xl">📦</span>
           </div>
-          <div class="flex flex-col">
-            <span class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              <span class="hidden sm:inline">응답하라 창고</span>
-              <span class="sm:hidden">응답하라</span>
-            </span>
-            <span v-if="user.role === 'partner'" class="text-xs text-gray-500 -mt-1">
-              (파트너)
-            </span>
+          <div class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <span class="hidden sm:inline">응답하라 창고</span>
+            <div class="sm:hidden flex flex-col leading-tight">
+              <span>응답하라</span>
+              <span class="text-sm -mt-1">창고</span>
+            </div>
           </div>
         </NuxtLink>
 

@@ -14,10 +14,13 @@
           <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <span class="text-white text-lg sm:text-xl">📦</span>
           </div>
-          <span class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <div class="font-bold text-lg sm:text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
             <span class="hidden sm:inline">응답하라 창고</span>
-            <span class="sm:hidden">응답하라</span>
-          </span>
+            <div class="sm:hidden flex flex-col leading-tight">
+              <span>응답하라</span>
+              <span class="text-sm -mt-1">창고</span>
+            </div>
+          </div>
         </NuxtLink>
       </div>
       <div class="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
@@ -32,9 +35,9 @@
           <NuxtLink 
             v-if="user.role === 'customer'"
             to="/customer/requests" 
-            class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full text-center"
+            class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full text-center whitespace-nowrap"
           >
-            <span class="hidden sm:inline">신청한<br>견적</span>
+            <span class="hidden sm:inline">신청한 견적</span>
             <span class="sm:hidden">견적</span>
           </NuxtLink>
           
@@ -62,9 +65,9 @@
             <div class="w-px h-4 sm:h-6 bg-gray-300"></div>
             <NuxtLink 
               to="/customer/completed-quotes" 
-              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full text-center"
+              class="text-gray-800 hover:text-gray-900 font-semibold text-sm sm:text-lg transition-all duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gray-400 after:transition-all after:duration-200 hover:after:w-full text-center whitespace-nowrap"
             >
-              <span class="hidden sm:inline">수락한<br>견적</span>
+              <span class="hidden sm:inline">수락한 견적</span>
               <span class="sm:hidden">완료</span>
             </NuxtLink>
           </template>
@@ -99,9 +102,13 @@
         <div class="inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-8 animate-fade-in">
           ✨ 새로운 물류 솔루션
         </div>
-        <h1 class="text-6xl md:text-7xl font-black text-gray-900 mb-8 leading-tight animate-slide-up">
+        <h1 class="text-4xl sm:text-6xl md:text-7xl font-black text-gray-900 mb-8 leading-tight animate-slide-up">
           <span class="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
-            응답하라 창고
+            <span class="hidden sm:inline">응답하라 창고</span>
+            <div class="sm:hidden flex flex-col items-center">
+              <span>응답하라</span>
+              <span>창고</span>
+            </div>
           </span>
         </h1>
         <p class="text-2xl text-gray-600 mb-16 max-w-3xl mx-auto leading-relaxed animate-fade-in-delay">
@@ -190,21 +197,21 @@
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <NuxtLink 
               to="/customer/requests" 
-              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+              class="group relative inline-flex items-center justify-center px-6 py-4 text-base font-bold text-white bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
             >
               <span class="relative z-10 flex items-center space-x-2">
                 <span>📋</span>
-                <span>신청한 견적 확인</span>
+                <span class="whitespace-nowrap">신청한 견적 확인</span>
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NuxtLink>
             <NuxtLink 
               to="/customer/completed-quotes" 
-              class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+              class="group relative inline-flex items-center justify-center px-6 py-4 text-base font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
             >
               <span class="relative z-10 flex items-center space-x-2">
                 <span>✅</span>
-                <span>완료된 견적</span>
+                <span class="whitespace-nowrap">완료된 견적</span>
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NuxtLink>
